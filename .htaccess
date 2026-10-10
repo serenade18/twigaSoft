@@ -1,0 +1,3 @@
+DirectoryIndex index.html
+RewriteEngine On
+RewriteRule ^about-twb-global/?$ about-twb-global.html [L]
