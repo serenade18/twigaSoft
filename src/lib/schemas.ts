@@ -29,3 +29,33 @@ export const signupSchema = z.object({ email: z.email('Please enter a valid emai
 
 export const enquiryResultSchema = z.object({ reference: z.string() });
 export const apiErrorSchema = z.object({ error: z.string().optional() });
+
+/* ---------- Admin authentication ---------- */
+
+export const adminSchema = z.object({ id: z.string().optional(), email: z.string(), name: z.string().optional() });
+export type Admin = z.infer<typeof adminSchema>;
+
+export const adminSessionSchema = z.object({ token: z.string().min(1), admin: adminSchema });
+export type AdminSession = z.infer<typeof adminSessionSchema>;
+
+export const loginSchema = z.object({
+  email: z.email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Please enter your password.'),
+});
+export type LoginValues = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({ email: z.email('Please enter a valid email address.') });
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Use at least 8 characters.')
+      .max(128, 'Use at most 128 characters.')
+      .regex(/[A-Za-z]/, 'Include at least one letter.')
+      .regex(/\d/, 'Include at least one number.'),
+    confirmPassword: z.string(),
+  })
+  .refine(values => values.password === values.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
