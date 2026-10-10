@@ -9,8 +9,13 @@ import Home from './pages/Home';
 function ScrollToHash() {
   const { pathname, hash, key } = useLocation();
   useEffect(() => {
-    if (!hash) return window.scrollTo(0, 0);
-    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+    // Statement bodies only: newer browsers return a Promise from scroll methods,
+    // and React would treat a returned value as the effect's cleanup function.
+    if (hash) {
+      document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, [pathname, hash, key]);
   return null;
 }
