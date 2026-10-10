@@ -10,8 +10,8 @@ const sectionLinks = [
 ];
 
 // Highlights the section link for whichever home-page section is under the header.
-function useCurrentSection(enabled) {
-  const [current, setCurrent] = useState(sectionLinks[0].hash);
+function useCurrentSection(enabled: boolean) {
+  const [current, setCurrent] = useState<string>(sectionLinks[0].hash);
   useEffect(() => {
     if (!enabled) return;
     let frame = 0;
@@ -34,7 +34,7 @@ function useCurrentSection(enabled) {
       window.removeEventListener('resize', update);
     };
   }, [enabled]);
-  return [current, setCurrent];
+  return [current, setCurrent] as const;
 }
 
 export default function Header() {

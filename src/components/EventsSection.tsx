@@ -1,39 +1,49 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchEvents } from '../api';
-import { fallbackEvents } from '../data/content';
-import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
-import EventCard from './EventCard';
+import { fetchEvents } from '@/api';
+import EventCard from '@/components/EventCard';
+import { fallbackEvents } from '@/data/content';
+import usePrefersReducedMotion from '@/hooks/usePrefersReducedMotion';
+import type { SiteEvent } from '@/lib/schemas';
 
-// Tracks which of the observed elements are on screen; returns null when reveal is disabled.
-function useRevealState(count, enabled) {
-  const refs = useRef([]);
-  const [visible, setVisible] = useState({});
+// Tracks which observed elements are on screen so they can fade in and out.
+function useRevealState(count: number, enabled: boolean) {
+  const refs = useRef<(HTMLElement | null)[]>([]);
+  const [visible, setVisible] = useState<Record<string, boolean>>({});
+  const active = enabled && 'IntersectionObserver' in window;
+
   useEffect(() => {
-    if (!enabled || !('IntersectionObserver' in window)) return;
+    if (!active) return;
     const observer = new IntersectionObserver(entries => {
       setVisible(prev => {
         const next = { ...prev };
-        entries.forEach(entry => { next[entry.target.dataset.reveal] = entry.isIntersecting; });
+        entries.forEach(entry => { next[(entry.target as HTMLElement).dataset.reveal!] = entry.isIntersecting; });
         return next;
       });
     }, { threshold: 0.12 });
     refs.current.slice(0, count).forEach(el => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [count, enabled]);
-  const active = enabled && 'IntersectionObserver' in window;
-  const revealClass = key => (active ? `event-reveal${visible[key] ? ' event-visible' : ''}` : undefined);
-  const setRef = index => el => { refs.current[index] = el; if (el) el.dataset.reveal = index; };
+  }, [count, active]);
+
+  const revealClass = (index: number) => (active ? `event-reveal${visible[index] ? ' event-visible' : ''}` : undefined);
+  const setRef = (index: number) => (el: HTMLElement | null) => {
+    refs.current[index] = el;
+    if (el) el.dataset.reveal = String(index);
+  };
   return { revealClass, setRef };
 }
 
-export default function EventsSection({ onOpen }) {
-  const [events, setEvents] = useState(null);
+interface EventsSectionProps {
+  onOpen: (event: SiteEvent) => void;
+}
+
+export default function EventsSection({ onOpen }: EventsSectionProps) {
+  const [events, setEvents] = useState<SiteEvent[] | null>(null);
   const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     let cancelled = false;
     fetchEvents()
-      .then(list => { if (!cancelled) setEvents(list?.length ? list : fallbackEvents); })
+      .then(list => { if (!cancelled) setEvents(list.length ? list : fallbackEvents); })
       .catch(() => { if (!cancelled) setEvents(fallbackEvents); });
     return () => { cancelled = true; };
   }, []);

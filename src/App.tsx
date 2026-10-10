@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import Footer from './components/Footer';
-import Header from './components/Header';
-import About from './pages/About';
-import Home from './pages/Home';
+import Footer from '@/components/Footer';
+import Header from '@/components/Header';
+import About from '@/pages/About';
+import Home from '@/pages/Home';
 
 // Scrolls to the #hash target after navigation, or to the top for a new page.
 function ScrollToHash() {

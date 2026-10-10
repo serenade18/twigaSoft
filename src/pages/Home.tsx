@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import DetailDialog from '../components/DetailDialog';
-import EnquiryForm from '../components/EnquiryForm';
-import EventsSection from '../components/EventsSection';
-import HeroSlideshow from '../components/HeroSlideshow';
-import { baseInterestOptions, goals, serviceDetails, services } from '../data/content';
-import usePageMeta from '../hooks/usePageMeta';
-import useScrollZoom from '../hooks/useScrollZoom';
-import { goToEnquiry } from '../scroll';
+import type { FormEvent } from 'react';
+import DetailDialog from '@/components/DetailDialog';
+import EnquiryForm from '@/components/EnquiryForm';
+import EventsSection from '@/components/EventsSection';
+import HeroSlideshow from '@/components/HeroSlideshow';
+import { baseInterestOptions, goals, serviceDetails, services } from '@/data/content';
+import usePageMeta from '@/hooks/usePageMeta';
+import useScrollZoom from '@/hooks/useScrollZoom';
+import type { SiteEvent } from '@/lib/schemas';
+import { goToEnquiry } from '@/scroll';
+import { useSiteStore } from '@/store/useSiteStore';
 
 const interestOptions = [...baseInterestOptions, 'Other'];
 
@@ -17,26 +19,28 @@ export default function Home() {
   });
   useScrollZoom('.opportunity-band, .closing');
 
-  const [interest, setInterest] = useState('');
-  const [detail, setDetail] = useState(null);
+  const setInterest = useSiteStore(s => s.setInterest);
+  const openDetail = useSiteStore(s => s.openDetail);
+  const closeDetail = useSiteStore(s => s.closeDetail);
 
-  const openService = title => setDetail({ title, ...serviceDetails[title] });
-  const openEvent = event => setDetail({
+  const openService = (title: string) => openDetail({ title, ...serviceDetails[title] });
+  const openEvent = (event: SiteEvent) => openDetail({
     title: event.title,
     description: event.summary,
     points: [`${event.location} · ${event.period}`, event.organiser, 'Register your interest to receive confirmed participation details.'],
   });
 
-  function enquireAbout(title) {
-    setDetail(null);
+  function enquireAbout(title: string) {
+    closeDetail();
     if (interestOptions.includes(title)) setInterest(title);
     goToEnquiry();
   }
 
-  function handleGoal(event) {
+  function handleGoal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = new FormData(event.currentTarget).get('goal');
-    setInterest(goals.find(goal => goal.value === value).interest);
+    const goal = goals.find(g => g.value === value);
+    if (goal) setInterest(goal.interest);
     goToEnquiry();
   }
 
@@ -142,8 +146,8 @@ export default function Home() {
         </div>
       </section>
 
-      <EnquiryForm eyebrow="GET STARTED" submitLabel="Submit enquiry" options={interestOptions} interest={interest} onInterestChange={setInterest} />
-      <DetailDialog detail={detail} onClose={() => setDetail(null)} onEnquire={enquireAbout} />
+      <EnquiryForm eyebrow="GET STARTED" submitLabel="Submit enquiry" options={interestOptions} />
+      <DetailDialog onEnquire={enquireAbout} />
     </>
   );
 }

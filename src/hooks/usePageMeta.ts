@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 
-export default function usePageMeta({ title, description, bodyClass }) {
+interface PageMeta {
+  title: string;
+  description: string;
+  bodyClass?: string;
+}
+
+export default function usePageMeta({ title, description, bodyClass }: PageMeta) {
   useEffect(() => {
     document.title = title;
     document.querySelector('meta[name="description"]')?.setAttribute('content', description);

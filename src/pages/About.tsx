@@ -1,13 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
-import EnquiryForm from '../components/EnquiryForm';
-import { baseInterestOptions } from '../data/content';
-import usePageMeta from '../hooks/usePageMeta';
-import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
+import EnquiryForm from '@/components/EnquiryForm';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { baseInterestOptions } from '@/data/content';
+import usePageMeta from '@/hooks/usePageMeta';
+import usePrefersReducedMotion from '@/hooks/usePrefersReducedMotion';
+import { useSiteStore } from '@/store/useSiteStore';
+
+interface AboutService {
+  tag: string;
+  title: string;
+  text: string;
+  cta: string;
+  interest?: string;
+  to?: string;
+}
 
 const interestOptions = [...baseInterestOptions, 'Business Travel & Concierge', 'Other'];
 
-const aboutServices = [
+const aboutServices: AboutService[] = [
   { tag: '01 / ESTABLISH', title: 'Company Formation Support', text: 'Explore UAE business setup pathways and introductions to licensed specialists suited to your activity and goals.', cta: 'Discuss Company Formation', interest: 'Company Formation' },
   { tag: '02 / CONNECT', title: 'Business Exchange & Delegations', text: 'Define a focused mission, explore target markets and plan relevant partner conversations.', cta: 'Plan a Delegation', interest: 'Business Exchange & Delegations' },
   { tag: '03 / PARTICIPATE', title: 'Summits & Exhibitions', text: 'Explore upcoming gatherings and register your interest in purposeful business and leadership events.', cta: 'Explore Events', to: '/#events' },
@@ -28,7 +39,7 @@ const faqs = [
 ];
 
 // Fades .twb-reveal elements in once as they first scroll into view.
-function useRevealOnce(rootRef) {
+function useRevealOnce(rootRef: RefObject<HTMLDivElement>) {
   const reducedMotion = usePrefersReducedMotion();
   useEffect(() => {
     if (reducedMotion || !('IntersectionObserver' in window)) return;
@@ -39,7 +50,7 @@ function useRevealOnce(rootRef) {
         observer.unobserve(entry.target);
       }
     }), { threshold: 0.08 });
-    rootRef.current.querySelectorAll('.twb-reveal').forEach(el => observer.observe(el));
+    rootRef.current?.querySelectorAll('.twb-reveal').forEach(el => observer.observe(el));
     return () => {
       observer.disconnect();
       document.body.classList.remove('twb-motion');
@@ -53,9 +64,9 @@ export default function About() {
     description: 'Meet TWB Global Tourism LLC, the organisation behind AFRIGULF Exchange. Explore business support, delegations, events and travel between Africa and the UAE.',
     bodyClass: 'twb-page',
   });
-  const rootRef = useRef(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   useRevealOnce(rootRef);
-  const [interest, setInterest] = useState('');
+  const setInterest = useSiteStore(s => s.setInterest);
 
   return (
     <div ref={rootRef}>
@@ -103,7 +114,7 @@ export default function About() {
                 <p>{service.text}</p>
                 {service.to
                   ? <Link to={service.to}>{service.cta}</Link>
-                  : <a href="#enquiry" onClick={() => setInterest(service.interest)}>{service.cta}</a>}
+                  : <a href="#enquiry" onClick={() => setInterest(service.interest!)}>{service.cta}</a>}
               </article>
             ))}
           </div>
@@ -152,14 +163,19 @@ export default function About() {
           </div>
           <div className="twb-faq twb-reveal">
             <h3>Before we begin</h3>
-            {faqs.map(([question, answer]) => (
-              <details key={question}><summary>{question}</summary><p>{answer}</p></details>
-            ))}
+            <Accordion type="multiple">
+              {faqs.map(([question, answer]) => (
+                <AccordionItem key={question} value={question} className="border-[#cbd6e4] py-2">
+                  <AccordionTrigger className="text-[17px] leading-normal font-bold hover:no-underline">{question}</AccordionTrigger>
+                  <AccordionContent><p>{answer}</p></AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </div>
       </section>
 
-      <EnquiryForm eyebrow="YOUR NEXT MOVE" submitLabel="Send My Enquiry" options={interestOptions} interest={interest} onInterestChange={setInterest} />
+      <EnquiryForm eyebrow="YOUR NEXT MOVE" submitLabel="Send My Enquiry" options={interestOptions} />
       <a className="twb-mobile-cta" href="#enquiry">Discuss Your Plans</a>
     </div>
   );

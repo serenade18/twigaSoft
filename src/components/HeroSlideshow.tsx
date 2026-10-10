@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { heroSlides } from '../data/content';
-import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
+import { heroSlides } from '@/data/content';
+import usePrefersReducedMotion from '@/hooks/usePrefersReducedMotion';
 
 function usePageHidden() {
   const [hidden, setHidden] = useState(document.hidden);
@@ -14,7 +14,7 @@ function usePageHidden() {
 
 // Advances only to successfully loaded images; pauses while the page is hidden.
 export default function HeroSlideshow() {
-  const imageRefs = useRef([]);
+  const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
@@ -48,7 +48,7 @@ export default function HeroSlideshow() {
           <img key={slide.src} ref={el => { imageRefs.current[index] = el; }}
             className={`hero-slide ${slide.className}${index === shown ? ' is-active' : ''}`}
             src={slide.src} alt="" width={slide.width} height={slide.height}
-            fetchpriority={index === 0 ? 'high' : undefined} />
+            {...(index === 0 ? { fetchpriority: 'high' } : {})} />
         ))}
       </div>
       <button className="hero-motion-control" type="button" hidden={reducedMotion} aria-label={label} aria-pressed={paused} title={label}

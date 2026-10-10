@@ -1,8 +1,16 @@
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState, type CSSProperties } from 'react';
+import type { SiteEvent } from '@/lib/schemas';
 
-const EventCard = forwardRef(function EventCard({ event, index, revealClass, onOpen }, ref) {
+interface EventCardProps {
+  event: SiteEvent;
+  index: number;
+  revealClass?: string;
+  onOpen: (event: SiteEvent) => void;
+}
+
+const EventCard = forwardRef<HTMLElement, EventCardProps>(function EventCard({ event, index, revealClass, onOpen }, ref) {
   const [opened, setOpened] = useState(false);
-  const timer = useRef();
+  const timer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(timer.current), []);
 
   function open() {
@@ -16,8 +24,8 @@ const EventCard = forwardRef(function EventCard({ event, index, revealClass, onO
   const classes = ['event-card', revealClass, opened && 'event-opened'].filter(Boolean).join(' ');
 
   return (
-    <article ref={ref} className={classes} style={{ '--event-delay': `${index * 100}ms` }}
-      onClick={e => { if (!e.target.closest('button')) open(); }}>
+    <article ref={ref} className={classes} style={{ '--event-delay': `${index * 100}ms` } as CSSProperties}
+      onClick={e => { if (!(e.target as Element).closest('button')) open(); }}>
       <div className={`event-image ${imageClass}`}></div>
       <div className="event-content">
         <small>{event.organiser}</small>

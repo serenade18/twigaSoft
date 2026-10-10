@@ -1,4 +1,7 @@
-export const serviceDetails = {
+import type { SiteEvent } from '@/lib/schemas';
+import type { Detail } from '@/store/useSiteStore';
+
+export const serviceDetails: Record<string, Omit<Detail, 'title'>> = {
   'Company Formation': {
     description: 'Establish and prepare your business for the UAE market.',
     points: ['Understand available business setup pathways', 'Connect with appropriately licensed specialists', 'Plan next steps based on your activity and goals'],
@@ -36,7 +39,7 @@ export const heroSlides = [
   { className: 'hero-summit', src: '/assets/summits-events-clear.png', width: 1672, height: 941 },
 ];
 
-export const fallbackEvents = [
+export const fallbackEvents: SiteEvent[] = [
   { slug: 'afrigulf-2026', title: 'AFRIGULF Exchange Global Business Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'AFRIGULF Exchange initiative · Powered by TWB Global Tourism', summary: 'Moving People, Trade and Capital Between Africa and the Gulf', label: 'View Summit', image: 'afrigulf-summit-image' },
   { slug: 'lccm-2026', title: 'LCCM Global Leadership Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'Organised by London College of Creative Media', summary: 'Connect. Collaborate. Create Global Impact.', label: 'View Event', image: 'image-three' },
 ];
