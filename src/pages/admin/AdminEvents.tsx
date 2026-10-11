@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { CalendarPlus, Search } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Eye, MapPin, Pencil, Search, Trash2 } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchAdminEvents, updateEventFlags } from '@/adminApi';
+import { deleteEvent, fetchAdminEvents, updateEventFlags } from '@/adminApi';
+import EventStatusBadge from '@/components/admin/EventStatusBadge';
 import EventThumb from '@/components/admin/EventThumb';
 import FormAlert from '@/components/admin/FormAlert';
+import Switch from '@/components/admin/Switch';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import usePageMeta from '@/hooks/usePageMeta';
-import { CATEGORY_LABELS, CATEGORY_NAMES, isPast } from '@/lib/events';
+import { CATEGORY_LABELS, CATEGORY_NAMES } from '@/lib/events';
 import { EVENT_CATEGORIES, type AdminEvent, type AdminEventsResponse } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +41,9 @@ export default function AdminEvents() {
   const [reload, setReload] = useState(0);
   const [searchInput, setSearchInput] = useState(search);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<AdminEvent | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [deletedNotice, setDeletedNotice] = useState('');
 
   function update(changes: Record<string, string | undefined>) {
     setParams(current => {
@@ -80,6 +86,23 @@ export default function AdminEvents() {
     }
   }
 
+  async function confirmDelete() {
+    if (!deleting) return;
+    setConfirming(true);
+    setError('');
+    try {
+      await deleteEvent(deleting.id);
+      setDeletedNotice(`“${deleting.title}” was deleted.`);
+      setDeleting(null);
+      setReload(n => n + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the event.');
+      setDeleting(null);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   const counts = data?.statusCounts;
   const countFor = (value: (typeof STATUS_TABS)[number]['value']) =>
     !counts ? undefined : value === 'published' ? counts.published : value === 'draft' ? counts.draft : counts.published + counts.draft;
@@ -116,7 +139,7 @@ export default function AdminEvents() {
         </div>
       </div>
 
-      {notice && <div className="mb-4"><FormAlert tone="success">{notice}</FormAlert></div>}
+      {(deletedNotice || notice) && <div className="mb-4"><FormAlert tone="success">{deletedNotice || notice}</FormAlert></div>}
       {error && (
         <div className="mb-4 grid gap-2">
           <FormAlert tone="error">{error}</FormAlert>
@@ -124,69 +147,67 @@ export default function AdminEvents() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-white" aria-busy={loading}>
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="border-b border-border bg-[#f8fafc] text-xs tracking-wide text-muted-foreground uppercase">
-            <tr>
-              <th scope="col" className="px-4 py-3 font-semibold">Event</th>
-              <th scope="col" className="hidden px-4 py-3 font-semibold md:table-cell">Type</th>
-              <th scope="col" className="px-4 py-3 font-semibold">When &amp; where</th>
-              <th scope="col" className="px-4 py-3 text-right font-semibold">Views</th>
-              <th scope="col" className="px-4 py-3 text-right font-semibold">Bookings</th>
-              <th scope="col" className="px-4 py-3 font-semibold">Status</th>
-              <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody className={cn(loading && data && 'opacity-60')}>
-            {data?.events.map(event => (
-              <tr key={event.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <EventThumb imageUrl={event.imageUrl} image={event.image} className="h-11 w-16 shrink-0" />
-                    <div className="min-w-0">
-                      <Link to={`/admin/events/${event.id}`} className="font-semibold hover:underline">{event.title}</Link>
-                      <div className="truncate text-muted-foreground">{event.organiser}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="hidden px-4 py-3 md:table-cell">{CATEGORY_NAMES[event.category]}</td>
-                <td className="px-4 py-3">
-                  <div>{event.period}</div>
-                  <div className="text-muted-foreground">{event.location}{isPast(event) && ' · Past'}</div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{event.stats.views.toLocaleString()}</td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <Link to={`/admin/events/${event.id}/attendees`} className="font-semibold hover:underline" aria-label={`${event.stats.bookings} bookings for ${event.title}`}>
-                    {event.stats.bookings.toLocaleString()}
-                  </Link>
-                  <div className="text-xs text-muted-foreground">
-                    {event.capacity ? `${event.stats.seatsBooked}/${event.capacity} seats` : `${event.stats.seatsBooked} seats`}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={cn('inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold', event.isPublished
-                    ? 'border-[#cfe7d6] bg-[#f0f9f3] text-[#1e6b3a]' : 'border-[#d5dde5] bg-[#f3f5f7] text-[#52667a]')}>
-                    {event.isPublished ? 'Published' : 'Draft'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" disabled={toggling === event.id} onClick={() => togglePublished(event)}
-                      aria-label={`${event.isPublished ? 'Unpublish' : 'Publish'} ${event.title}`}>
-                      {event.isPublished ? 'Unpublish' : 'Publish'}
-                    </Button>
-                    <Button variant="outline" size="sm" asChild><Link to={`/admin/events/${event.id}/edit`} aria-label={`Edit ${event.title}`}>Edit</Link></Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {loading && !data && <p role="status" className="m-0 px-4 py-10 text-center text-muted-foreground">Loading events…</p>}
-        {data && data.events.length === 0 && (
-          <p className="m-0 px-4 py-10 text-center text-muted-foreground">{search || status || category ? 'No events match these filters.' : 'No events yet. Create your first one.'}</p>
-        )}
-      </div>
+      {loading && !data && <p role="status" className="py-10 text-center text-muted-foreground">Loading events…</p>}
+      {data && data.events.length === 0 && (
+        <p className="rounded-lg border border-border bg-white px-4 py-10 text-center text-muted-foreground">
+          {search || status || category ? 'No events match these filters.' : 'No events yet. Create your first one.'}
+        </p>
+      )}
+      <ul className={cn('m-0 grid list-none gap-3 p-0 transition-opacity', loading && data && 'opacity-60')} aria-label="Events" aria-busy={loading}>
+        {data?.events.map(event => (
+          <li key={event.id} aria-label={event.title} className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-white p-3 pr-5">
+            <Link to={`/admin/events/${event.id}`} tabIndex={-1} aria-hidden="true" className="shrink-0">
+              <EventThumb imageUrl={event.imageUrl} image={event.image} className="h-20 w-24" />
+            </Link>
+            <div className="min-w-0 flex-1">
+              <Link to={`/admin/events/${event.id}`} className="mb-1 block truncate text-base font-semibold hover:underline">{event.title}</Link>
+              <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-4" aria-hidden="true" />{event.period}</span>
+                <span className="inline-flex items-center gap-1.5"><MapPin className="size-4" aria-hidden="true" />{event.location}</span>
+                <span>{CATEGORY_NAMES[event.category]}</span>
+                <Link to={`/admin/events/${event.id}/attendees`} className="hover:underline">
+                  {event.stats.bookings} {event.stats.bookings === 1 ? 'booking' : 'bookings'} · {event.capacity ? `${event.stats.seatsBooked}/${event.capacity} seats` : `${event.stats.seatsBooked} seats`}
+                </Link>
+                <span>{event.stats.views.toLocaleString()} views</span>
+              </div>
+              <EventStatusBadge event={event} />
+            </div>
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+              <div className="mr-3">
+                <Switch checked={event.isPublished} disabled={toggling === event.id} onChange={() => togglePublished(event)}
+                  label={event.isPublished ? 'Published' : 'Draft'} ariaLabel={`Published: ${event.title}`} />
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={`/admin/events/${event.id}`} aria-label={`View ${event.title}`}><Eye /> View</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={`/admin/events/${event.id}/edit`} aria-label={`Edit ${event.title}`}><Pencil /> Edit</Link>
+              </Button>
+              <Button variant="ghost" size="sm" className="text-[#b42318] hover:bg-[#fdf1f0] hover:text-[#b42318]"
+                onClick={() => setDeleting(event)} aria-label={`Delete ${event.title}`}>
+                <Trash2 /> Delete
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <Dialog open={!!deleting} onOpenChange={open => { if (!open) setDeleting(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-sans! tracking-normal!">Delete this event?</DialogTitle>
+            <DialogDescription>
+              “{deleting?.title}” will be removed from the site and can’t be recovered
+              {deleting && deleting.stats.bookings > 0 ? `, along with its ${deleting.stats.bookings} booking${deleting.stats.bookings === 1 ? '' : 's'}` : ''}.
+              To hide it instead, switch it to draft.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button className="bg-[#b42318] hover:bg-[#912018]" disabled={confirming} onClick={confirmDelete}>{confirming ? 'Deleting…' : 'Delete event'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

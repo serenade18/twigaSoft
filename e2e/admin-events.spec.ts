@@ -45,7 +45,7 @@ test('creates an event with a cover image that appears on the public events page
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kigali Trade Forum 2027');
   await expect(page.getByText('Bookings open', { exact: true }).first()).toBeVisible();
   await page.getByRole('link', { name: 'Events', exact: true }).first().click();
-  await expect(page.getByRole('row', { name: /Kigali Trade Forum 2027/ })).toContainText('Published');
+  await expect(page.getByRole('listitem', { name: 'Kigali Trade Forum 2027' })).toContainText('Published');
 
   const stored = djangoShell("from events.models import Event; e = Event.objects.get(title='Kigali Trade Forum 2027'); print(e.slug, e.period, bool(e.cover))");
   expect(stored).toBe('kigali-trade-forum-2027 10–12 August 2027 True');
@@ -72,8 +72,8 @@ test('drafts stay off the site until published, and events can be edited and del
   await expect(publicTitles(page)).not.toContainText(['Secret Summit']);
 
   await page.goto('/admin/events?status=draft');
-  await page.getByRole('button', { name: 'Publish Secret Summit' }).click();
-  await expect(page.getByRole('row', { name: /Secret Summit/ })).toHaveCount(0); // no longer a draft
+  await page.getByRole('switch', { name: 'Published: Secret Summit' }).click();
+  await expect(page.getByRole('listitem', { name: 'Secret Summit' })).toHaveCount(0); // no longer a draft
   await page.goto('/events');
   await expect(publicTitles(page)).toContainText(['Secret Summit']);
 
@@ -83,8 +83,9 @@ test('drafts stay off the site until published, and events can be edited and del
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('“Doha Leaders Summit” was saved and is live on the site.')).toBeVisible();
 
-  await page.getByRole('link', { name: 'Edit event' }).click();
-  await page.getByRole('button', { name: 'Delete' }).click();
+  // Delete straight from the list.
+  await page.getByRole('link', { name: 'Events', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Delete Doha Leaders Summit' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Delete event' }).click();
   await expect(page.getByText('“Doha Leaders Summit” was deleted.')).toBeVisible();
   await page.goto('/events');
@@ -124,4 +125,15 @@ test('the overview toggles bookings and featuring, and featured events lead the 
   await expect(page.locator('#event-grid article h3')).toHaveText(['E2E Trade Expo']);
   await page.goto('/events/e2e-expo');
   await expect(page.getByText('Bookings are closed for this event.')).toBeVisible();
+});
+
+test('the list switches events between published and draft', async ({ page }) => {
+  await openEvents(page);
+  const expo = page.getByRole('listitem', { name: 'E2E Trade Expo' });
+  await expo.getByRole('switch', { name: 'Published: E2E Trade Expo' }).click();
+  await expect(expo.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(expo).toContainText('Draft');
+  expect(djangoShell("from events.models import Event; print(Event.objects.get(slug='e2e-expo').is_published)")).toBe('False');
+  await expo.getByRole('link', { name: 'View E2E Trade Expo' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Trade Expo');
 });

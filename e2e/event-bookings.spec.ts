@@ -86,9 +86,9 @@ print('ok')`);
   await expect(performance.getByRole('row', { name: /E2E Trade Expo/ })).toContainText('5.0%');
 
   await page.goto('/admin/events');
-  const row = page.getByRole('row', { name: /E2E Trade Expo/ });
-  await expect(row).toContainText('2/3 seats');
-  await row.getByRole('link', { name: 'E2E Trade Expo', exact: true }).click();
+  const item = page.getByRole('listitem', { name: 'E2E Trade Expo' });
+  await expect(item).toContainText('2/3 seats');
+  await item.getByRole('link', { name: 'E2E Trade Expo', exact: true }).click();
 
   // Performance tab, as in the overview mock-up.
   await expect(page.getByText('Page views', { exact: true }).locator('../..')).toContainText('20');

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, CalendarDays, Copy, ExternalLink, MapPin, Pencil, UserRound } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { fetchAdminEvent, updateEventFlags } from '@/adminApi';
+import EventStatusBadge from '@/components/admin/EventStatusBadge';
 import EventThumb from '@/components/admin/EventThumb';
 import FormAlert from '@/components/admin/FormAlert';
+import Switch from '@/components/admin/Switch';
 import { Button } from '@/components/ui/button';
 import usePageMeta from '@/hooks/usePageMeta';
-import { CATEGORY_NAMES, isPast } from '@/lib/events';
+import { CATEGORY_NAMES } from '@/lib/events';
 import type { AdminEvent } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
 
@@ -17,29 +19,6 @@ export interface EventOutletContext {
 }
 
 export const useEventContext = () => useOutletContext<EventOutletContext>();
-
-/** The event's status as visitors experience it. */
-function statusOf(event: AdminEvent) {
-  if (!event.isPublished) return { label: 'Draft', tone: 'border-[#d5dde5] bg-[#f3f5f7] text-[#52667a]' };
-  if (isPast(event)) return { label: 'Past', tone: 'border-[#d5dde5] bg-[#f3f5f7] text-[#52667a]' };
-  if (event.stats.seatsLeft === 0) return { label: 'Fully booked', tone: 'border-[#f1dcb8] bg-[#fcf7ef] text-[#8a5a12]' };
-  if (!event.bookingsOpen) return { label: 'Bookings closed', tone: 'border-[#f1dcb8] bg-[#fcf7ef] text-[#8a5a12]' };
-  return { label: 'Bookings open', tone: 'border-[#cfe7d6] bg-[#f0f9f3] text-[#1e6b3a]' };
-}
-
-function Toggle({ checked, onChange, label, description, disabled }: {
-  checked: boolean; onChange: (next: boolean) => void; label: string; description: string; disabled?: boolean;
-}) {
-  return (
-    <label className={cn('flex cursor-pointer items-center gap-3', disabled && 'cursor-wait opacity-60')}>
-      <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)}
-        className={cn('relative h-6 w-11 shrink-0 rounded-full border-0 p-0 transition-colors', checked ? 'bg-[#2f6fa8]' : 'bg-[#cfd8e3]')}>
-        <span className={cn('absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
-      </button>
-      <span className="text-sm leading-tight"><span className="block font-semibold">{label}</span><span className="text-muted-foreground">{description}</span></span>
-    </label>
-  );
-}
 
 /** `/admin/events/:id` — the event at a glance (switches, links) with Performance and Attendees tabs below. */
 export default function EventOverview() {
@@ -90,7 +69,6 @@ export default function EventOverview() {
       : <p role="status" className="py-16 text-center text-muted-foreground">Loading event…</p>;
   }
 
-  const status = statusOf(event);
   const tab = 'rounded-md px-4 py-1.5 text-sm font-semibold';
 
   return (
@@ -101,7 +79,7 @@ export default function EventOverview() {
         <EventThumb imageUrl={event.imageUrl} image={event.image} className="h-40 w-full md:h-full md:min-h-48" />
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className={cn('inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold', status.tone)}>{status.label}</span>
+            <EventStatusBadge event={event} />
             <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{CATEGORY_NAMES[event.category]}</span>
             {event.isFeatured && <span className="text-xs font-semibold tracking-wide text-[#8a5a12] uppercase">· Featured</span>}
           </div>
@@ -112,9 +90,9 @@ export default function EventOverview() {
             <li className="flex items-center gap-2"><UserRound className="size-4" aria-hidden="true" />{event.organiser}</li>
           </ul>
           <div className="mb-4 flex flex-wrap gap-x-10 gap-y-3 rounded-lg border border-border bg-[#f8fafc] px-4 py-3">
-            <Toggle checked={event.bookingsOpen} disabled={saving} onChange={next => setFlag({ bookingsOpen: next })} label="Bookings open"
+            <Switch checked={event.bookingsOpen} disabled={saving} onChange={next => setFlag({ bookingsOpen: next })} label="Bookings open"
               description={event.bookingsOpen ? 'Visitors can book seats' : 'Booking is switched off'} />
-            <Toggle checked={event.isFeatured} disabled={saving} onChange={next => setFlag({ isFeatured: next })} label="Featured"
+            <Switch checked={event.isFeatured} disabled={saving} onChange={next => setFlag({ isFeatured: next })} label="Featured"
               description={event.isFeatured ? 'Leads the home page' : 'Not featured'} />
           </div>
           {(notice || error) && <div className="mb-3">{error ? <FormAlert tone="error">{error}</FormAlert> : <FormAlert tone="success">{notice}</FormAlert>}</div>}
