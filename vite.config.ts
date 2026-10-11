@@ -5,12 +5,14 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const backend = env.API_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:8000';
   return {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': path.resolve(__dirname, './src') } },
     server: {
       // In development the app calls /api on its own origin and Vite forwards it to the backend (no CORS needed).
-      proxy: { '/api': env.API_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:8000' },
+      // Uploaded files (/media) come from the backend too.
+      proxy: { '/api': backend, '/media': backend },
     },
   };
 });

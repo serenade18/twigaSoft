@@ -26,7 +26,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: `.venv/bin/python manage.py runserver 127.0.0.1:${API_PORT} --noreload`,
+      // Migrate first: Playwright starts web servers before globalSetup, and the readiness check queries the database.
+      command: `.venv/bin/python manage.py migrate --noinput && .venv/bin/python manage.py runserver 127.0.0.1:${API_PORT} --noreload`,
       cwd: API_DIR,
       url: `http://127.0.0.1:${API_PORT}/api/events`,
       env: { DJANGO_SETTINGS_MODULE: 'config.settings_e2e', FRONTEND_URL: WEB_URL, PYTHONUNBUFFERED: '1' },

@@ -6,6 +6,7 @@ import HeroSlideshow from '@/components/HeroSlideshow';
 import { baseInterestOptions, goals, serviceDetails, services } from '@/data/content';
 import usePageMeta from '@/hooks/usePageMeta';
 import useScrollZoom from '@/hooks/useScrollZoom';
+import { eventDetail } from '@/lib/events';
 import type { SiteEvent } from '@/lib/schemas';
 import { goToEnquiry } from '@/scroll';
 import { useSiteStore } from '@/store/useSiteStore';
@@ -24,11 +25,7 @@ export default function Home() {
   const closeDetail = useSiteStore(s => s.closeDetail);
 
   const openService = (title: string) => openDetail({ title, ...serviceDetails[title] });
-  const openEvent = (event: SiteEvent) => openDetail({
-    title: event.title,
-    description: event.summary,
-    points: [`${event.location} · ${event.period}`, event.organiser, 'Register your interest to receive confirmed participation details.'],
-  });
+  const openEvent = (event: SiteEvent) => openDetail(eventDetail(event));
 
   function enquireAbout(title: string) {
     closeDetail();

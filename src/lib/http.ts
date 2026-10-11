@@ -4,6 +4,9 @@ import { apiErrorSchema } from '@/lib/schemas';
 // The dev server proxies /api to VITE_API_BASE_URL (see vite.config.ts), so requests stay same-origin in development.
 const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
+/** Full URL for a file the API serves (e.g. an uploaded event cover at `/media/...`). */
+export const mediaUrl = (path: string) => (path.startsWith('/') ? `${API_BASE_URL}${path}` : path);
+
 /** Error from the API: `message` is safe to show; `fields` holds per-field validation messages. */
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly fields: Record<string, string[]> = {}) {
@@ -14,7 +17,9 @@ export class ApiError extends Error {
 export async function apiRequest(path: string, init: RequestInit = {}): Promise<unknown> {
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
+    // FormData (file uploads) sets its own multipart Content-Type; everything else is JSON.
+    const contentType: Record<string, string> = init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers: { ...contentType, ...init.headers } });
   } catch {
     throw new ApiError('We could not reach the server. Check your connection and try again.', 0);
   }

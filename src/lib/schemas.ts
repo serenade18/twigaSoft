@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const EVENT_CATEGORIES = ['summit', 'conference', 'exhibition', 'trade_mission', 'workshop', 'networking'] as const;
+
 export const siteEventSchema = z.object({
   slug: z.string().optional(),
   title: z.string(),
@@ -9,6 +11,12 @@ export const siteEventSchema = z.object({
   summary: z.string(),
   label: z.string().optional(),
   image: z.string().optional(),
+  /** Uploaded cover (a /media/... path); takes priority over the built-in `image`. */
+  imageUrl: z.string().nullable().optional(),
+  // Unknown categories (e.g. added to the API later) show under "Summit" rather than breaking the page.
+  category: z.enum(EVENT_CATEGORIES).catch('summit').default('summit'),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
 });
 export type SiteEvent = z.infer<typeof siteEventSchema>;
 
@@ -149,3 +157,55 @@ export const staffFormSchema = z.object({
   password: z.union([z.literal(''), newPassword]),
 });
 export type StaffFormValues = z.infer<typeof staffFormSchema>;
+
+/* ---------- Admin events ---------- */
+
+export const EVENT_IMAGES = ['afrigulf-summit-image', 'image-one', 'image-two', 'image-three'] as const;
+
+export const adminEventSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  category: z.enum(EVENT_CATEGORIES),
+  location: z.string(),
+  startDate: z.string().nullable(),
+  endDate: z.string().nullable(),
+  period: z.string(),
+  organiser: z.string(),
+  summary: z.string(),
+  label: z.string(),
+  image: z.enum(EVENT_IMAGES),
+  imageUrl: z.string().nullable(),
+  isPublished: z.boolean(),
+  sortOrder: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type AdminEvent = z.infer<typeof adminEventSchema>;
+
+export const adminEventsResponseSchema = z.object({
+  events: z.array(adminEventSchema),
+  statusCounts: z.object({ published: z.number(), draft: z.number() }),
+});
+export type AdminEventsResponse = z.infer<typeof adminEventsResponseSchema>;
+
+export const eventFormSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Please enter a title.').max(200),
+    category: z.enum(EVENT_CATEGORIES),
+    location: z.string().trim().min(1, 'Please enter a location.').max(120),
+    startDate: z.string(),
+    endDate: z.string(),
+    period: z.string().trim().max(80),
+    organiser: z.string().trim().min(1, 'Please enter the organiser.').max(200),
+    summary: z.string().trim().min(1, 'Please add a short summary.').max(300),
+    label: z.string().trim().max(40),
+    image: z.enum(EVENT_IMAGES),
+    slug: z.string().trim().max(50).regex(/^[-a-z0-9]*$/, 'Use lowercase letters, numbers and hyphens only.'),
+    sortOrder: z.number({ error: 'Enter a number.' }).int().min(0),
+    isPublished: z.boolean(),
+  })
+  .refine(v => !v.endDate || !!v.startDate, { path: ['startDate'], message: 'Add a start date as well as an end date.' })
+  .refine(v => !v.endDate || !v.startDate || v.endDate >= v.startDate, { path: ['endDate'], message: 'The end date can’t be before the start date.' })
+  .refine(v => !!v.startDate || !!v.period, { path: ['period'], message: 'Add a start date, or describe when it happens (e.g. “December 2026”).' });
+export type EventFormValues = z.infer<typeof eventFormSchema>;

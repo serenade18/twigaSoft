@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchEvents } from '@/api';
+import { Link } from 'react-router-dom';
 import EventCard from '@/components/EventCard';
-import { fallbackEvents } from '@/data/content';
 import usePrefersReducedMotion from '@/hooks/usePrefersReducedMotion';
+import { isPast, useEvents } from '@/lib/events';
 import type { SiteEvent } from '@/lib/schemas';
+
+// The home page features the first few upcoming events (in the order set in the CMS); the rest live on /events.
+const FEATURED_COUNT = 4;
 
 // Tracks which observed elements are on screen so they can fade in and out.
 function useRevealState(count: number, enabled: boolean) {
@@ -37,16 +40,9 @@ interface EventsSectionProps {
 }
 
 export default function EventsSection({ onOpen }: EventsSectionProps) {
-  const [events, setEvents] = useState<SiteEvent[] | null>(null);
+  const all = useEvents();
+  const events = all && all.filter(event => !isPast(event)).slice(0, FEATURED_COUNT);
   const reducedMotion = usePrefersReducedMotion();
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchEvents()
-      .then(list => { if (!cancelled) setEvents(list.length ? list : fallbackEvents); })
-      .catch(() => { if (!cancelled) setEvents(fallbackEvents); });
-    return () => { cancelled = true; };
-  }, []);
 
   const { revealClass, setRef } = useRevealState(events ? events.length + 1 : 0, !!events && !reducedMotion);
 
@@ -64,8 +60,12 @@ export default function EventsSection({ onOpen }: EventsSectionProps) {
               <EventCard key={event.slug || event.title} ref={setRef(i + 1)} event={event} index={i} revealClass={revealClass(i + 1)} onOpen={onOpen} />
             ))
             : <p className="loading">Loading featured events…</p>}
+          {events?.length === 0 && <p>New events will be announced soon.</p>}
         </div>
         <p className="event-note">Event details and registration are subject to confirmation.</p>
+        <p className="mt-6 mb-0 text-center">
+          <Link className="button button-dark" to="/events">View all summits &amp; events →</Link>
+        </p>
       </div>
     </section>
   );

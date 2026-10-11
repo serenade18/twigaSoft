@@ -6,7 +6,6 @@ const sectionLinks = [
   { hash: 'services', label: 'Start a Business' },
   { hash: 'opportunities', label: 'Business Exchange' },
   { hash: 'delegations', label: 'Delegations' },
-  { hash: 'events', label: 'Summits & Events' },
 ];
 
 // Highlights the section link for whichever home-page section is under the header.
@@ -63,6 +62,7 @@ export default function Header() {
               </Link>
             );
           })}
+          <NavLink to="/events" className={({ isActive }) => (isActive ? 'is-current' : undefined)} onClick={close}>Summits &amp; Events</NavLink>
           <NavLink to="/about-twb-global" end onClick={close}>About TWB Global</NavLink>
           <a className="nav-cta" href="#enquiry" onClick={close}>Start an Enquiry <span aria-hidden="true">→</span></a>
         </nav>

@@ -2,10 +2,13 @@ import { ApiError, apiRequest, postJson } from '@/lib/http';
 import {
   adminEnquiriesResponseSchema,
   adminEnquirySchema,
+  adminEventSchema,
+  adminEventsResponseSchema,
   adminSchema,
   adminSessionSchema,
   type EnquiryStatus,
   type EnquiryUpdateValues,
+  type EventFormValues,
   type ForgotPasswordValues,
   type LoginValues,
   staffMemberSchema,
@@ -97,4 +100,52 @@ export async function createStaff(values: StaffFormValues) {
 export async function updateStaff(id: string, values: Partial<StaffFormValues>) {
   const data = await adminRequest(`/api/admin/staff/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(values) });
   return z.object({ member: staffMemberSchema }).parse(data).member;
+}
+
+/* Event engine. */
+
+export interface EventQuery {
+  status?: 'published' | 'draft';
+  category?: string;
+  search?: string;
+}
+
+export async function fetchAdminEvents({ status, category, search }: EventQuery = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (category) params.set('category', category);
+  if (search) params.set('search', search);
+  const query = params.toString() ? `?${params}` : '';
+  return adminEventsResponseSchema.parse(await adminRequest(`/api/admin/events${query}`));
+}
+
+export async function fetchAdminEvent(id: string) {
+  return z.object({ event: adminEventSchema }).parse(await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`)).event;
+}
+
+export interface CoverChange {
+  /** A new cover to upload. */
+  file?: File | null;
+  /** Drop the current cover (and fall back to the built-in image). */
+  remove?: boolean;
+}
+
+/** Creates (no `id`) or updates an event. Sent as multipart so a cover can come along; empty dates clear them. */
+export async function saveEvent(id: string | null, values: Partial<EventFormValues>, cover: CoverChange = {}) {
+  const body = new FormData();
+  for (const [key, value] of Object.entries(values)) body.append(key, String(value));
+  if (cover.file) body.append('cover', cover.file);
+  if (cover.remove) body.append('removeCover', 'true');
+  const path = id ? `/api/admin/events/${encodeURIComponent(id)}` : '/api/admin/events';
+  const data = await adminRequest(path, { method: id ? 'PATCH' : 'POST', body });
+  return z.object({ event: adminEventSchema }).parse(data).event;
+}
+
+export async function setEventPublished(id: string, isPublished: boolean) {
+  const data = await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ isPublished }) });
+  return z.object({ event: adminEventSchema }).parse(data).event;
+}
+
+export async function deleteEvent(id: string) {
+  await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

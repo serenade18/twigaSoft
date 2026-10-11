@@ -18,7 +18,7 @@ const storedEnquiry = (reference: string) =>
 
 test('lists enquiries from the API and filters them by status and search', async ({ page }) => {
   await signIn(page);
-  await page.getByRole('link', { name: 'Enquiries' }).click();
+  await page.getByRole('link', { name: 'Enquiries', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/enquiries$/);
   await expect(page.getByRole('heading', { name: 'Enquiries' })).toBeVisible();
   await expect(rows(page)).toHaveCount(3);

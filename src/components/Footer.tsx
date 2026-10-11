@@ -13,11 +13,11 @@ export default function Footer() {
         <nav className="footer-links" aria-label="Footer">
           <div>
             <strong>Platform</strong>
-            <Link to="/#services">Mobility</Link><Link to="/#delegations">Trade Missions</Link><Link to="/#opportunities">Opportunities</Link><Link to="/#events">Summits & Events</Link>
+            <Link to="/#services">Mobility</Link><Link to="/#delegations">Trade Missions</Link><Link to="/#opportunities">Opportunities</Link><Link to="/events">Summits & Events</Link>
           </div>
           <div>
             <strong>Company</strong>
-            <Link to="/about-twb-global">About Us</Link><Link to="/#services">Our Services</Link><Link to="/#events">Updates</Link><a href="#enquiry">Contact Us</a>
+            <Link to="/about-twb-global">About Us</Link><Link to="/#services">Our Services</Link><Link to="/events">Updates</Link><a href="#enquiry">Contact Us</a>
           </div>
           <div>
             <strong>Support</strong>

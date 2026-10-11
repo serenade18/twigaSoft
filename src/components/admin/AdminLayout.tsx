@@ -35,7 +35,9 @@ export default function AdminLayout() {
   const admin = useAuthStore(s => s.admin);
   const [signingOut, setSigningOut] = useState(false);
   const nav = ADMIN_NAV.filter(item => !item.adminOnly || admin?.role === 'admin');
-  const current = nav.find(item => item.to === pathname.replace(/\/$/, ''));
+  // The deepest matching section, so /admin/events/12 highlights Events rather than Dashboard.
+  const path = pathname.replace(/\/$/, '');
+  const current = nav.filter(item => path === item.to || path.startsWith(`${item.to}/`)).at(-1);
 
   async function handleSignOut() {
     setSigningOut(true);

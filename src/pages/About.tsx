@@ -21,7 +21,7 @@ const interestOptions = [...baseInterestOptions, 'Business Travel & Concierge', 
 const aboutServices: AboutService[] = [
   { tag: '01 / ESTABLISH', title: 'Company Formation Support', text: 'Explore UAE business setup pathways and introductions to licensed specialists suited to your activity and goals.', cta: 'Discuss Company Formation', interest: 'Company Formation' },
   { tag: '02 / CONNECT', title: 'Business Exchange & Delegations', text: 'Define a focused mission, explore target markets and plan relevant partner conversations.', cta: 'Plan a Delegation', interest: 'Business Exchange & Delegations' },
-  { tag: '03 / PARTICIPATE', title: 'Summits & Exhibitions', text: 'Explore upcoming gatherings and register your interest in purposeful business and leadership events.', cta: 'Explore Events', to: '/#events' },
+  { tag: '03 / PARTICIPATE', title: 'Summits & Exhibitions', text: 'Explore upcoming gatherings and register your interest in purposeful business and leadership events.', cta: 'Explore Events', to: '/events' },
   { tag: '04 / EXPERIENCE', title: 'Business Travel & Concierge', text: 'Discuss the practical arrangements and support you need for a focused visit to Dubai.', cta: 'Discuss Your Visit', interest: 'Business Travel & Concierge' },
 ];
 

@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { mediaUrl } from '@/lib/http';
 import type { SiteEvent } from '@/lib/schemas';
 
 interface EventCardProps {
@@ -26,7 +27,8 @@ const EventCard = forwardRef<HTMLElement, EventCardProps>(function EventCard({ e
   return (
     <article ref={ref} className={classes} style={{ '--event-delay': `${index * 100}ms` } as CSSProperties}
       onClick={e => { if (!(e.target as Element).closest('button')) open(); }}>
-      <div className={`event-image ${imageClass}`}></div>
+      <div className={`event-image ${imageClass}`}
+        style={event.imageUrl ? { backgroundImage: `url("${mediaUrl(event.imageUrl)}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}></div>
       <div className="event-content">
         <small>{event.organiser}</small>
         <h3>{event.title}</h3>

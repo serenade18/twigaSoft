@@ -40,8 +40,8 @@ export const heroSlides = [
 ];
 
 export const fallbackEvents: SiteEvent[] = [
-  { slug: 'afrigulf-2026', title: 'AFRIGULF Exchange Global Business Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'AFRIGULF Exchange initiative · Powered by TWB Global Tourism', summary: 'Moving People, Trade and Capital Between Africa and the Gulf', label: 'View Summit', image: 'afrigulf-summit-image' },
-  { slug: 'lccm-2026', title: 'LCCM Global Leadership Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'Organised by London College of Creative Media', summary: 'Connect. Collaborate. Create Global Impact.', label: 'View Event', image: 'image-three' },
+  { slug: 'afrigulf-2026', title: 'AFRIGULF Exchange Global Business Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'AFRIGULF Exchange initiative · Powered by TWB Global Tourism', summary: 'Moving People, Trade and Capital Between Africa and the Gulf', label: 'View Summit', image: 'afrigulf-summit-image', category: 'summit' },
+  { slug: 'lccm-2026', title: 'LCCM Global Leadership Summit 2026', location: 'Dubai', period: 'December 2026', organiser: 'Organised by London College of Creative Media', summary: 'Connect. Collaborate. Create Global Impact.', label: 'View Event', image: 'image-three', category: 'summit' },
 ];
 
 export const baseInterestOptions = [
