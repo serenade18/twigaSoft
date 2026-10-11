@@ -28,7 +28,10 @@ export type Enquiry = z.infer<typeof enquirySchema>;
 export const signupSchema = z.object({ email: z.email('Please enter a valid email address.').max(200) });
 
 export const enquiryResultSchema = z.object({ reference: z.string() });
-export const apiErrorSchema = z.object({ error: z.string().optional() });
+export const apiErrorSchema = z.object({
+  error: z.string().optional(),
+  fields: z.record(z.string(), z.array(z.string())).optional(),
+});
 
 /* ---------- Admin authentication ---------- */
 

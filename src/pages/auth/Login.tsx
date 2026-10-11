@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/adminApi';
+import { applyFieldErrors } from '@/lib/http';
 import AuthLayout, { AuthLink } from '@/components/admin/AuthLayout';
 import FormAlert from '@/components/admin/FormAlert';
 import PasswordInput from '@/components/admin/PasswordInput';
@@ -35,8 +36,10 @@ export default function Login() {
       signIn(await login(values));
       navigate(state.from ?? '/admin', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
       form.resetField('password');
+      if (!applyFieldErrors(err, form.setError, ['email', 'password'])) {
+        setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
+      }
     }
   }
 

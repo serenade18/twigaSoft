@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '@/adminApi';
+import { applyFieldErrors } from '@/lib/http';
 import AuthLayout, { AuthLink } from '@/components/admin/AuthLayout';
 import FormAlert from '@/components/admin/FormAlert';
 import PasswordInput from '@/components/admin/PasswordInput';
@@ -36,6 +37,7 @@ export default function ResetPassword() {
       await resetPassword(token!, values.password);
       navigate('/admin/login', { replace: true, state: { notice: 'Your password has been updated. Sign in with your new password.' } });
     } catch (err) {
+      if (applyFieldErrors(err, form.setError, ['password'])) return;
       setError(err instanceof Error ? err.message : 'Unable to reset your password. The link may have expired.');
     }
   }

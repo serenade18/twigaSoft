@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { '@': path.resolve(__dirname, './src') } },
     server: {
       // Forward /api calls to the backend during development.
-      proxy: { '/api': env.API_PROXY_TARGET || 'http://localhost:3000' },
+      proxy: { '/api': env.API_PROXY_TARGET || 'http://localhost:8000' },
     },
   };
 });

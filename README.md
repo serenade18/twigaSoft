@@ -4,7 +4,7 @@ AFRIGULF Exchange website — React 18 + TypeScript + Vite, with shadcn/ui (Tail
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173, /api proxied to API_PROXY_TARGET (default http://localhost:3000)
+npm run dev        # http://localhost:5173, /api proxied to API_PROXY_TARGET (default http://localhost:8000, the Django API in ../twigaSoftApi)
 npm run typecheck
 npm run build      # typechecks, then outputs dist/ (includes .htaccess for Apache SPA routing)
 npm run preview

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { submitEnquiry } from '@/api';
+import { applyFieldErrors } from '@/lib/http';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +41,11 @@ export default function EnquiryForm({ eyebrow, submitLabel, options }: EnquiryFo
       form.reset(emptyEnquiry);
       setInterest('');
     } catch (error) {
-      setStatus(error instanceof Error && error.message ? error.message : 'Unable to submit. Your details are still here; please try again.');
+      if (applyFieldErrors(error, form.setError, ['name', 'email', 'phone', 'country', 'interest', 'message'])) {
+        setStatus('Please check the highlighted fields.');
+      } else {
+        setStatus(error instanceof Error && error.message ? error.message : 'Unable to submit. Your details are still here; please try again.');
+      }
     }
   }
 

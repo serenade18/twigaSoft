@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { requestPasswordReset } from '@/adminApi';
+import { applyFieldErrors } from '@/lib/http';
 import AuthLayout, { AuthLink } from '@/components/admin/AuthLayout';
 import FormAlert from '@/components/admin/FormAlert';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ export default function ForgotPassword() {
       await requestPasswordReset(values);
       setSentTo(values.email);
     } catch (err) {
+      if (applyFieldErrors(err, form.setError, ['email'])) return;
       setError(err instanceof Error ? err.message : 'Unable to send the reset link. Please try again.');
     }
   }
