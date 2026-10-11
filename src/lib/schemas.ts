@@ -35,7 +35,12 @@ export const apiErrorSchema = z.object({
 
 /* ---------- Admin authentication ---------- */
 
-export const adminSchema = z.object({ id: z.string().optional(), email: z.string(), name: z.string().optional() });
+export const ROLES = ['admin', 'staff'] as const;
+export const roleSchema = z.enum(ROLES);
+export type Role = z.infer<typeof roleSchema>;
+
+/** `admin` accounts can also manage staff. Sessions saved before roles existed default to `staff` until /me refreshes them. */
+export const adminSchema = z.object({ id: z.string().optional(), email: z.string(), name: z.string().optional(), role: roleSchema.default('staff') });
 export type Admin = z.infer<typeof adminSchema>;
 
 export const adminSessionSchema = z.object({ token: z.string().min(1), admin: adminSchema });
@@ -97,3 +102,50 @@ export const enquiryUpdateSchema = z.object({
   notes: z.string(),
 });
 export type EnquiryUpdateValues = z.infer<typeof enquiryUpdateSchema>;
+
+/* ---------- Dashboard ---------- */
+
+export const STAT_RANGES = [7, 30, 90] as const;
+
+const rankedSchema = z.array(z.object({ label: z.string(), count: z.number() }));
+
+export const statsSchema = z.object({
+  days: z.number(),
+  totals: z.object({ enquiries: z.number(), awaitingReply: z.number(), publishedEvents: z.number(), activeStaff: z.number() }),
+  period: z.object({ enquiries: z.number(), previous: z.number() }),
+  daily: z.array(z.object({ date: z.string(), count: z.number() })),
+  byStatus: z.record(enquiryStatusSchema, z.number()),
+  topInterests: rankedSchema,
+  topCountries: rankedSchema,
+  recent: z.array(adminEnquirySchema),
+});
+export type Stats = z.infer<typeof statsSchema>;
+
+/* ---------- Staff ---------- */
+
+export const staffMemberSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  name: z.string(),
+  role: roleSchema,
+  isActive: z.boolean(),
+  lastLogin: z.string().nullable(),
+  dateJoined: z.string(),
+});
+export type StaffMember = z.infer<typeof staffMemberSchema>;
+
+// Mirrors the API's rules loosely; Django's password validators have the final say.
+const newPassword = z.string().min(8, 'Use at least 8 characters.').max(128, 'Use at most 128 characters.');
+
+export const staffFormSchema = z.object({
+  firstName: z.string().trim().max(150),
+  lastName: z.string().trim().max(150),
+  email: z.email('Please enter a valid email address.'),
+  role: roleSchema,
+  isActive: z.boolean(),
+  // Required when creating; leave blank when editing to keep the current password.
+  password: z.union([z.literal(''), newPassword]),
+});
+export type StaffFormValues = z.infer<typeof staffFormSchema>;

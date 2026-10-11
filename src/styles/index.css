@@ -73,7 +73,7 @@
 /* No preflight here, so undo browser list and button defaults inside the sidebar (in a layer, so utilities still win). */
 @layer base {
   [data-slot="sidebar"] ul { list-style: none; margin: 0; padding: 0; }
-  [data-slot="sidebar"] button { border: 0; background: transparent; }
+  [data-slot="sidebar"] button { border: 0; background: transparent; color: inherit; }
 }
 
 /* Beats styles.css's unlayered `a { color: inherit }` so active and hover link colours show. */

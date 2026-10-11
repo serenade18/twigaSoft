@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Inbox, LayoutDashboard, LogOut } from 'lucide-react';
+import { CalendarDays, Inbox, LayoutDashboard, LogOut, UsersRound } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '@/adminApi';
 import {
@@ -25,7 +25,8 @@ const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/events', label: 'Events', icon: CalendarDays },
   { to: '/admin/enquiries', label: 'Enquiries', icon: Inbox },
-] as const;
+  { to: '/admin/staff', label: 'Staff', icon: UsersRound, adminOnly: true },
+];
 
 /** Shell for signed-in admin pages: collapsible sidebar navigation plus a top bar. */
 export default function AdminLayout() {
@@ -33,7 +34,8 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const admin = useAuthStore(s => s.admin);
   const [signingOut, setSigningOut] = useState(false);
-  const current = ADMIN_NAV.find(item => item.to === pathname.replace(/\/$/, ''));
+  const nav = ADMIN_NAV.filter(item => !item.adminOnly || admin?.role === 'admin');
+  const current = nav.find(item => item.to === pathname.replace(/\/$/, ''));
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -55,7 +57,7 @@ export default function AdminLayout() {
               <SidebarGroupLabel className="tracking-[0.13em] text-sidebar-primary">ADMIN PORTAL</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {ADMIN_NAV.map(({ to, label, icon: Icon }) => (
+                  {nav.map(({ to, label, icon: Icon }) => (
                     <SidebarMenuItem key={to}>
                       <SidebarMenuButton asChild isActive={current?.to === to} tooltip={label}>
                         <NavLink to={to} end><Icon /><span>{label}</span></NavLink>

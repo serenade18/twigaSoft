@@ -5,6 +5,7 @@ import { expect, type Page } from '@playwright/test';
 import { API_DIR } from '../playwright.config';
 
 export const ADMIN = { email: 'admin@e2e.test', password: 'Original-pass-2026', name: 'Amina' };
+export const STAFF = { email: 'staff@e2e.test', password: 'Staff-pass-2026', name: 'Omar' };
 
 /** Runs a Django management command against the e2e database and returns its output. */
 export function django(args: string[]) {
@@ -21,9 +22,9 @@ export function djangoShell(code: string) {
   return lines[lines.length - 1];
 }
 
-/** Wipes the e2e database and mailbox, seeds the e2e events and the standard admin. */
+/** Wipes the e2e database and mailbox, seeds the e2e events, the standard admin and a staff member. */
 export function resetDatabase() {
-  django(['e2e_reset', '--admin', `${ADMIN.email}:${ADMIN.password}:${ADMIN.name}`]);
+  django(['e2e_reset', '--admin', `${ADMIN.email}:${ADMIN.password}:${ADMIN.name}`, '--staff', `${STAFF.email}:${STAFF.password}:${STAFF.name}`]);
 }
 
 const MAIL_DIR = path.join(API_DIR, '.e2e-mail');

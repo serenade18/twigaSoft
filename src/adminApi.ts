@@ -8,6 +8,9 @@ import {
   type EnquiryUpdateValues,
   type ForgotPasswordValues,
   type LoginValues,
+  staffMemberSchema,
+  type StaffFormValues,
+  statsSchema,
 } from '@/lib/schemas';
 import { useAuthStore } from '@/store/useAuthStore';
 import { z } from 'zod';
@@ -73,4 +76,25 @@ export async function fetchEnquiries({ status, search, page }: EnquiryQuery = {}
 export async function updateEnquiry(reference: string, values: Partial<EnquiryUpdateValues>) {
   const data = await adminRequest(`/api/admin/enquiries/${encodeURIComponent(reference)}`, { method: 'PATCH', body: JSON.stringify(values) });
   return z.object({ enquiry: adminEnquirySchema }).parse(data).enquiry;
+}
+
+/** Dashboard figures for the last `days` days (7, 30 or 90). */
+export async function fetchStats(days: number) {
+  return statsSchema.parse(await adminRequest(`/api/admin/stats?days=${days}`));
+}
+
+/* Staff management (admins only). */
+
+export async function fetchStaff() {
+  return z.object({ staff: z.array(staffMemberSchema) }).parse(await adminRequest('/api/admin/staff')).staff;
+}
+
+export async function createStaff(values: StaffFormValues) {
+  const data = await adminRequest('/api/admin/staff', { method: 'POST', body: JSON.stringify(values) });
+  return z.object({ member: staffMemberSchema }).parse(data).member;
+}
+
+export async function updateStaff(id: string, values: Partial<StaffFormValues>) {
+  const data = await adminRequest(`/api/admin/staff/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(values) });
+  return z.object({ member: staffMemberSchema }).parse(data).member;
 }
