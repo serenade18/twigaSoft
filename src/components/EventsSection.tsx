@@ -5,7 +5,8 @@ import usePrefersReducedMotion from '@/hooks/usePrefersReducedMotion';
 import { isPast, useEvents } from '@/lib/events';
 import type { SiteEvent } from '@/lib/schemas';
 
-// The home page features the first few upcoming events (in the order set in the CMS); the rest live on /events.
+// The home page shows upcoming featured events (or, if none are featured, the first upcoming ones in the CMS order).
+// Everything else lives on /events.
 const FEATURED_COUNT = 4;
 
 // Tracks which observed elements are on screen so they can fade in and out.
@@ -41,7 +42,9 @@ interface EventsSectionProps {
 
 export default function EventsSection({ onOpen }: EventsSectionProps) {
   const all = useEvents();
-  const events = all && all.filter(event => !isPast(event)).slice(0, FEATURED_COUNT);
+  const upcoming = all?.filter(event => !isPast(event));
+  const featured = upcoming?.filter(event => event.isFeatured);
+  const events = upcoming && (featured!.length ? featured! : upcoming).slice(0, FEATURED_COUNT);
   const reducedMotion = usePrefersReducedMotion();
 
   const { revealClass, setRef } = useRevealState(events ? events.length + 1 : 0, !!events && !reducedMotion);

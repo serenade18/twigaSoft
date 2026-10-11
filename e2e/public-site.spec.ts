@@ -49,15 +49,13 @@ test.describe('featured events', () => {
     await expect(page.locator('#event-grid').getByRole('heading', { name: 'LCCM Global Leadership Summit 2026' })).toBeVisible();
   });
 
-  test('opens event details and starts an enquiry from them', async ({ page }) => {
+  test('opens an event’s own page from its card', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'View E2E Summit' }).click();
-    const dialog = page.getByRole('dialog', { name: 'E2E Investment Summit' });
-    await expect(dialog).toContainText('An event that only exists in the API database.');
-    await expect(dialog).toContainText('Organised by the E2E suite');
-    await dialog.getByRole('button', { name: /Enquire about this/ }).click();
-    await expect(dialog).toBeHidden();
-    await expect(enquiryForm(page).getByLabel('Full name')).toBeFocused();
+    await expect(page).toHaveURL(/\/events\/e2e-summit$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Investment Summit');
+    await expect(page.getByText('Two days of investor meetings.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Book your place' })).toBeVisible();
   });
 });
 

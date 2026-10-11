@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarPlus, Search } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchAdminEvents, setEventPublished } from '@/adminApi';
+import { fetchAdminEvents, updateEventFlags } from '@/adminApi';
 import EventThumb from '@/components/admin/EventThumb';
 import FormAlert from '@/components/admin/FormAlert';
 import { Button } from '@/components/ui/button';
@@ -71,7 +71,7 @@ export default function AdminEvents() {
     setToggling(event.id);
     setError('');
     try {
-      await setEventPublished(event.id, !event.isPublished);
+      await updateEventFlags(event.id, { isPublished: !event.isPublished });
       setReload(n => n + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update the event.');
@@ -131,6 +131,8 @@ export default function AdminEvents() {
               <th scope="col" className="px-4 py-3 font-semibold">Event</th>
               <th scope="col" className="hidden px-4 py-3 font-semibold md:table-cell">Type</th>
               <th scope="col" className="px-4 py-3 font-semibold">When &amp; where</th>
+              <th scope="col" className="px-4 py-3 text-right font-semibold">Views</th>
+              <th scope="col" className="px-4 py-3 text-right font-semibold">Bookings</th>
               <th scope="col" className="px-4 py-3 font-semibold">Status</th>
               <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
             </tr>
@@ -152,6 +154,15 @@ export default function AdminEvents() {
                   <div>{event.period}</div>
                   <div className="text-muted-foreground">{event.location}{isPast(event) && ' · Past'}</div>
                 </td>
+                <td className="px-4 py-3 text-right tabular-nums">{event.stats.views.toLocaleString()}</td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  <Link to={`/admin/events/${event.id}/attendees`} className="font-semibold hover:underline" aria-label={`${event.stats.bookings} bookings for ${event.title}`}>
+                    {event.stats.bookings.toLocaleString()}
+                  </Link>
+                  <div className="text-xs text-muted-foreground">
+                    {event.capacity ? `${event.stats.seatsBooked}/${event.capacity} seats` : `${event.stats.seatsBooked} seats`}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   <span className={cn('inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold', event.isPublished
                     ? 'border-[#cfe7d6] bg-[#f0f9f3] text-[#1e6b3a]' : 'border-[#d5dde5] bg-[#f3f5f7] text-[#52667a]')}>
@@ -164,7 +175,7 @@ export default function AdminEvents() {
                       aria-label={`${event.isPublished ? 'Unpublish' : 'Publish'} ${event.title}`}>
                       {event.isPublished ? 'Unpublish' : 'Publish'}
                     </Button>
-                    <Button variant="outline" size="sm" asChild><Link to={`/admin/events/${event.id}`} aria-label={`Edit ${event.title}`}>Edit</Link></Button>
+                    <Button variant="outline" size="sm" asChild><Link to={`/admin/events/${event.id}/edit`} aria-label={`Edit ${event.title}`}>Edit</Link></Button>
                   </div>
                 </td>
               </tr>

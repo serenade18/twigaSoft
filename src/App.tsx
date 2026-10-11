@@ -8,11 +8,16 @@ import About from '@/pages/About';
 import AdminEvents from '@/pages/admin/AdminEvents';
 import Dashboard from '@/pages/admin/Dashboard';
 import Enquiries from '@/pages/admin/Enquiries';
+import Bookings from '@/pages/admin/Bookings';
+import EventAttendees from '@/pages/admin/EventAttendees';
 import EventEditor from '@/pages/admin/EventEditor';
+import EventOverview from '@/pages/admin/EventOverview';
+import EventPerformance from '@/pages/admin/EventPerformance';
 import Staff from '@/pages/admin/Staff';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import Login from '@/pages/auth/Login';
 import ResetPassword from '@/pages/auth/ResetPassword';
+import EventDetail from '@/pages/EventDetail';
 import Events from '@/pages/Events';
 import Home from '@/pages/Home';
 
@@ -50,6 +55,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/events/:slug" element={<EventDetail />} />
           <Route path="/about-twb-global" element={<About />} />
           <Route path="/about-twb-global.html" element={<Navigate to="/about-twb-global" replace />} />
         </Route>
@@ -58,7 +64,12 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="events/new" element={<EventEditor />} />
-            <Route path="events/:id" element={<EventEditor />} />
+            <Route path="events/:id" element={<EventOverview />}>
+              <Route index element={<EventPerformance />} />
+              <Route path="attendees" element={<EventAttendees />} />
+            </Route>
+            <Route path="events/:id/edit" element={<EventEditor />} />
+            <Route path="bookings" element={<Bookings />} />
             <Route path="enquiries" element={<Enquiries />} />
             <Route path="staff" element={<Staff />} />
           </Route>

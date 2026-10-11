@@ -69,7 +69,8 @@ export default function Dashboard() {
             <StatTile label={`Enquiries, last ${period}`} value={stats.period.enquiries}
               delta={{ current: stats.period.enquiries, previous: stats.period.previous, period }} />
             <StatTile label="Awaiting reply" value={stats.totals.awaitingReply} note="New enquiries, all time" />
-            <StatTile label="Total enquiries" value={stats.totals.enquiries} note="All time" />
+            <StatTile label={`Event bookings, last ${period}`} value={stats.period.bookings}
+              delta={{ current: stats.period.bookings, previous: stats.period.previousBookings, period }} />
             <StatTile label="Published events" value={stats.totals.publishedEvents} note={`${stats.totals.activeStaff} active staff accounts`} />
           </div>
 
@@ -90,6 +91,35 @@ export default function Dashboard() {
               <RankedBars rows={stats.topCountries} empty="No enquiries in this period." />
             </ChartCard>
           </div>
+
+          <ChartCard title="Event performance" description="Page views and confirmed bookings, all time">
+            {stats.eventPerformance.length === 0 ? <p className="mb-0 text-sm text-muted-foreground">No event views or bookings yet.</p> : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="text-xs tracking-wide text-muted-foreground uppercase">
+                    <tr className="border-b border-border">
+                      <th scope="col" className="py-2 pr-4 font-semibold">Event</th>
+                      <th scope="col" className="py-2 pr-4 text-right font-semibold">Views</th>
+                      <th scope="col" className="py-2 pr-4 text-right font-semibold">Bookings</th>
+                      <th scope="col" className="py-2 pr-4 text-right font-semibold">Seats</th>
+                      <th scope="col" className="py-2 text-right font-semibold">Conversion</th>
+                    </tr>
+                  </thead>
+                  <tbody className="tabular-nums">
+                    {stats.eventPerformance.map(e => (
+                      <tr key={e.id} className="border-b border-border last:border-0">
+                        <td className="py-2.5 pr-4"><Link to={`/admin/events/${e.id}`} className="font-semibold hover:underline">{e.title}</Link></td>
+                        <td className="py-2.5 pr-4 text-right">{e.views.toLocaleString()}</td>
+                        <td className="py-2.5 pr-4 text-right">{e.bookings.toLocaleString()}</td>
+                        <td className="py-2.5 pr-4 text-right">{e.seatsBooked.toLocaleString()}</td>
+                        <td className="py-2.5 text-right">{e.views ? `${((e.bookings / e.views) * 100).toFixed(1)}%` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ChartCard>
 
           <ChartCard title="Latest enquiries">
             {stats.recent.length === 0 ? <p className="mb-0 text-sm text-muted-foreground">No enquiries yet.</p> : (

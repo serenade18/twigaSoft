@@ -28,7 +28,7 @@ const MAX_COVER_BYTES = 5 * 1024 * 1024;
 
 const blank: EventFormValues = {
   title: '', category: 'summit', location: '', startDate: '', endDate: '', period: '', organiser: '', summary: '',
-  label: '', image: 'image-one', slug: '', sortOrder: 0, isPublished: true,
+  description: '', label: '', image: 'image-one', slug: '', sortOrder: 0, isPublished: true, bookingsOpen: true, capacity: '',
 };
 
 function toForm(event: AdminEvent): EventFormValues {
@@ -36,8 +36,9 @@ function toForm(event: AdminEvent): EventFormValues {
   const generated = !!event.startDate && event.period === formatPeriod(event.startDate, event.endDate);
   return {
     title: event.title, category: event.category, location: event.location, startDate: event.startDate ?? '', endDate: event.endDate ?? '',
-    period: generated ? '' : event.period, organiser: event.organiser, summary: event.summary,
+    period: generated ? '' : event.period, organiser: event.organiser, summary: event.summary, description: event.description,
     label: event.label === 'View Event' ? '' : event.label, image: event.image, slug: event.slug, sortOrder: event.sortOrder, isPublished: event.isPublished,
+    bookingsOpen: event.bookingsOpen, capacity: event.capacity === null ? '' : String(event.capacity),
   };
 }
 
@@ -51,7 +52,7 @@ function Section({ title, description, children }: { title: string; description?
   );
 }
 
-/** Create or edit an event (`/admin/events/new` or `/admin/events/:id`), with a live preview of the site's card. */
+/** Create or edit an event (`/admin/events/new` or `/admin/events/:id/edit`), with a live preview of the site's card. */
 export default function EventEditor() {
   const { id } = useParams();
   const creating = !id;
@@ -110,7 +111,7 @@ export default function EventEditor() {
     setError('');
     try {
       const saved = await saveEvent(id ?? null, formValues, { file: coverFile, remove: removeCover && !coverFile });
-      navigate('/admin/events', { replace: creating, state: { notice: `“${saved.title}” was ${creating ? 'created' : 'saved'}${saved.isPublished ? ' and is live on the site' : ' as a draft'}.` } });
+      navigate(`/admin/events/${saved.id}`, { replace: true, state: { notice: `“${saved.title}” was ${creating ? 'created' : 'saved'}${saved.isPublished ? ' and is live on the site' : ' as a draft'}.` } });
     } catch (err) {
       const placed = applyFieldErrors(err, form.setError, Object.keys(blank) as (keyof EventFormValues)[]);
       const coverMessage = err instanceof ApiError ? err.fields.cover?.[0] : undefined;
@@ -151,9 +152,11 @@ export default function EventEditor() {
 
   return (
     <section className="mx-auto max-w-6xl">
-      <Link to="/admin/events" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> All events</Link>
+      <Link to={creating ? '/admin/events' : `/admin/events/${id}`} className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" /> {creating ? 'All events' : 'Back to event'}
+      </Link>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="mb-0 text-3xl">{creating ? 'New event' : event!.title}</h1>
+        <h1 className="mb-0 text-3xl">{creating ? 'New event' : `Edit ${event!.title}`}</h1>
         {!creating && <Button variant="outline" className="bg-white text-[#b42318] hover:text-[#b42318]" onClick={() => setConfirmDelete(true)}><Trash2 /> Delete</Button>}
       </div>
 
@@ -164,7 +167,7 @@ export default function EventEditor() {
 
             <Section title="Details">
               {textField('title', 'Title')}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid items-start gap-4 sm:grid-cols-2">
                 <FormField control={form.control} name="category" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
@@ -181,7 +184,15 @@ export default function EventEditor() {
                 <FormItem>
                   <FormLabel>Summary</FormLabel>
                   <FormControl><Textarea rows={3} maxLength={300} {...field} /></FormControl>
-                  <FormDescription>{field.value.length}/300 characters. Shown on the card and in the details pop-up.</FormDescription>
+                  <FormDescription>{field.value.length}/300 characters. Shown on the event card and at the top of the event page.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="description" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full description (optional)</FormLabel>
+                  <FormControl><Textarea rows={7} {...field} /></FormControl>
+                  <FormDescription>Programme, speakers, who should attend… Shown on the event page. Leave a blank line between paragraphs.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -189,7 +200,7 @@ export default function EventEditor() {
 
             <Section title="When & where">
               {textField('location', 'Location')}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid items-start gap-4 sm:grid-cols-2">
                 <FormField control={form.control} name="startDate" render={({ field }) => (
                   <FormItem><FormLabel>Start date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
@@ -233,7 +244,7 @@ export default function EventEditor() {
                   {coverError || 'JPG, PNG or WebP, up to 5 MB. A landscape photo works best.'}
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid items-start gap-4 sm:grid-cols-2">
                 <FormField control={form.control} name="image" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Built-in image</FormLabel>
@@ -251,6 +262,31 @@ export default function EventEditor() {
               </div>
             </Section>
 
+            <Section title="Bookings" description="Visitors book seats on the event page. No payment is taken.">
+              <FormField control={form.control} name="bookingsOpen" render={({ field }) => (
+                <FormItem>
+                  <label className="flex items-start gap-3 text-sm">
+                    <FormControl>
+                      <input type="checkbox" className="mt-0.5 size-4 accent-[#0d2b45]" checked={field.value}
+                        onChange={e => field.onChange(e.target.checked)} onBlur={field.onBlur} name={field.name} ref={field.ref} />
+                    </FormControl>
+                    <span><span className="font-medium">Bookings open</span><br />
+                      <span className="text-muted-foreground">Bookings close automatically once the event is past or full.</span></span>
+                  </label>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="capacity" render={({ field }) => (
+                <FormItem className="sm:max-w-xs">
+                  <FormLabel>Capacity (seats)</FormLabel>
+                  <FormControl><Input inputMode="numeric" placeholder="No limit" {...field} /></FormControl>
+                  <FormDescription>
+                    {event && event.stats.seatsBooked > 0 ? `${event.stats.seatsBooked} seats booked so far.` : 'Leave blank for no limit.'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </Section>
+
             <Section title="Publishing">
               <FormField control={form.control} name="isPublished" render={({ field }) => (
                 <FormItem>
@@ -264,7 +300,7 @@ export default function EventEditor() {
                   </label>
                 </FormItem>
               )} />
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid items-start gap-4 sm:grid-cols-2">
                 <FormField control={form.control} name="sortOrder" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Featured order</FormLabel>
@@ -288,7 +324,7 @@ export default function EventEditor() {
               <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : creating ? 'Create event' : 'Save changes'}
               </Button>
-              <Button type="button" variant="outline" size="lg" className="bg-white" asChild><Link to="/admin/events">Cancel</Link></Button>
+              <Button type="button" variant="outline" size="lg" className="bg-white" asChild><Link to={creating ? '/admin/events' : `/admin/events/${id}`}>Cancel</Link></Button>
             </div>
           </div>
 
@@ -311,7 +347,11 @@ export default function EventEditor() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-sans! tracking-normal!">Delete this event?</DialogTitle>
-            <DialogDescription>“{event?.title}” will be removed from the site and can’t be recovered. To hide it instead, unpublish it.</DialogDescription>
+            <DialogDescription>
+              “{event?.title}” will be removed from the site and can’t be recovered
+              {event && event.stats.bookings > 0 ? `, along with its ${event.stats.bookings} booking${event.stats.bookings === 1 ? '' : 's'}` : ''}.
+              To hide it instead, unpublish it.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>

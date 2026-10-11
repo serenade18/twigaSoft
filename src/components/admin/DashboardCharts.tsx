@@ -69,12 +69,21 @@ export function StatTile({ label, value, note, delta }: StatTileProps) {
   );
 }
 
-/** Daily enquiry counts as columns, with a hover/keyboard tooltip and a table view. */
-export function DailyColumns({ daily }: { daily: { date: string; count: number }[] }) {
+interface DailyColumnsProps {
+  daily: { date: string; count: number }[];
+  /** What a count is, singular and plural, for the tooltip and table. */
+  unit?: [string, string];
+  /** Shown instead of an empty chart when every day is zero. */
+  empty?: string;
+}
+
+/** Daily counts as columns, with a hover/keyboard tooltip and a table view. */
+export function DailyColumns({ daily, unit = ['enquiry', 'enquiries'], empty }: DailyColumnsProps) {
   const [active, setActive] = useState<number | null>(null);
   const max = niceMax(Math.max(0, ...daily.map(d => d.count)));
   const ticks = [max, max / 2, 0];
   const point = active === null ? null : daily[active];
+  const [singular, plural] = unit;
   const labelled = new Set([0, 1, 2, 3].map(n => Math.round((n * (daily.length - 1)) / 3)));
 
   function onKeyDown(e: KeyboardEvent) {
@@ -86,6 +95,10 @@ export function DailyColumns({ daily }: { daily: { date: string; count: number }
     });
   }
 
+  if (empty && daily.every(d => d.count === 0)) {
+    return <p className="mb-0 grid h-48 place-items-center text-sm text-muted-foreground">{empty}</p>;
+  }
+
   return (
     <div>
       <div className="flex gap-2">
@@ -94,7 +107,7 @@ export function DailyColumns({ daily }: { daily: { date: string; count: number }
           {ticks.map(t => <span key={t} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - t / max) * 100}%` }}>{compact.format(t)}</span>)}
         </div>
         <div className="min-w-0 flex-1">
-          <div tabIndex={0} role="group" aria-label="Enquiries per day. Use the left and right arrow keys to read each day."
+          <div tabIndex={0} role="group" aria-label={`${plural[0].toUpperCase()}${plural.slice(1)} per day. Use the left and right arrow keys to read each day.`}
             onKeyDown={onKeyDown} onBlur={() => setActive(null)} onPointerLeave={() => setActive(null)}
             className="relative h-48 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4">
             {ticks.map(t => <div key={t} className="absolute inset-x-0 h-px bg-border" style={{ top: `${(1 - t / max) * 100}%` }} aria-hidden="true" />)}
@@ -111,7 +124,7 @@ export function DailyColumns({ daily }: { daily: { date: string; count: number }
             {point && (
               <div role="status" className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-white px-3 py-1.5 text-sm whitespace-nowrap shadow-md"
                 style={{ left: `clamp(3rem, ${((active! + 0.5) / daily.length) * 100}%, calc(100% - 3rem))` }}>
-                <strong className="block text-base">{number.format(point.count)} {point.count === 1 ? 'enquiry' : 'enquiries'}</strong>
+                <strong className="block text-base">{number.format(point.count)} {point.count === 1 ? singular : plural}</strong>
                 <span className="text-muted-foreground">{formatDay(point.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
               </div>
             )}
@@ -129,7 +142,7 @@ export function DailyColumns({ daily }: { daily: { date: string; count: number }
         <summary className="cursor-pointer text-muted-foreground">Show as table</summary>
         <div className="mt-2 max-h-60 overflow-y-auto">
           <table className="w-full border-collapse text-left">
-            <thead><tr className="border-b border-border text-muted-foreground"><th className="py-1.5 font-medium">Day</th><th className="py-1.5 text-right font-medium">Enquiries</th></tr></thead>
+            <thead><tr className="border-b border-border text-muted-foreground"><th className="py-1.5 font-medium">Day</th><th className="py-1.5 text-right font-medium">{plural[0].toUpperCase()}{plural.slice(1)}</th></tr></thead>
             <tbody className="tabular-nums">
               {daily.map(d => <tr key={d.date} className="border-b border-border last:border-0"><td className="py-1.5">{formatDay(d.date, { dateStyle: 'medium' })}</td><td className="py-1.5 text-right">{d.count}</td></tr>)}
             </tbody>

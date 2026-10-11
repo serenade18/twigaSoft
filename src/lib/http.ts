@@ -2,7 +2,7 @@ import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import { apiErrorSchema } from '@/lib/schemas';
 
 // The dev server proxies /api to VITE_API_BASE_URL (see vite.config.ts), so requests stay same-origin in development.
-const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+export const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 /** Full URL for a file the API serves (e.g. an uploaded event cover at `/media/...`). */
 export const mediaUrl = (path: string) => (path.startsWith('/') ? `${API_BASE_URL}${path}` : path);

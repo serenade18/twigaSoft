@@ -1,16 +1,13 @@
 import { useMemo } from 'react';
 import { Search, X } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import DetailDialog from '@/components/DetailDialog';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import EnquiryForm from '@/components/EnquiryForm';
 import EventCard from '@/components/EventCard';
 import { baseInterestOptions } from '@/data/content';
 import usePageMeta from '@/hooks/usePageMeta';
-import { CATEGORY_LABELS, eventDetail, isPast, sortEvents, todayIso, useEvents } from '@/lib/events';
+import { CATEGORY_LABELS, isPast, sortEvents, todayIso, useEvents } from '@/lib/events';
 import { EVENT_CATEGORIES, type SiteEvent } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
-import { goToEnquiry } from '@/scroll';
-import { useSiteStore } from '@/store/useSiteStore';
 
 const WHEN = [
   { value: 'upcoming', label: 'Upcoming' },
@@ -39,9 +36,7 @@ export default function Events() {
   const location = params.get('location') ?? '';
   const when: When = WHEN.find(w => w.value === params.get('when'))?.value ?? 'upcoming';
 
-  const openDetail = useSiteStore(s => s.openDetail);
-  const closeDetail = useSiteStore(s => s.closeDetail);
-  const setInterest = useSiteStore(s => s.setInterest);
+  const navigate = useNavigate();
 
   function update(changes: Record<string, string | undefined>) {
     setParams(current => {
@@ -75,12 +70,6 @@ export default function Events() {
 
   const filtersActive = !!(query || category || location || when !== 'upcoming');
 
-  function enquireAbout(title: string) {
-    closeDetail();
-    if (interestOptions.includes(title)) setInterest(title);
-    goToEnquiry();
-  }
-
   return (
     <>
       <section className="relative isolate bg-[#071e50] pt-[150px] pb-16 text-white">
@@ -89,7 +78,7 @@ export default function Events() {
           <p className="eyebrow text-[#ffd076]!">SUMMITS &amp; EVENTS</p>
           <h1 className="mt-3 mb-4 max-w-3xl text-[clamp(34px,4.2vw,58px)] leading-[1.1] font-extrabold">Gatherings that connect Africa and the Gulf.</h1>
           <p className="mb-0 max-w-xl text-lg leading-relaxed text-[#dbe6f3]">
-            Browse summits, conferences, exhibitions and trade missions, then register your interest in the ones that fit your plans.
+            Browse summits, conferences, exhibitions and trade missions, then book your place. Booking is free.
           </p>
         </div>
       </section>
@@ -153,7 +142,7 @@ export default function Events() {
           {events && results.length > 0 && (
             <div className="event-grid" id="event-grid">
               {results.map((event, i) => (
-                <EventCard key={event.slug || event.title} event={event} index={i} onOpen={e => openDetail(eventDetail(e))} />
+                <EventCard key={event.slug || event.title} event={event} index={i} onOpen={e => navigate(`/events/${e.slug}`)} />
               ))}
             </div>
           )}
@@ -176,7 +165,6 @@ export default function Events() {
       </section>
 
       <EnquiryForm eyebrow="REGISTER YOUR INTEREST" submitLabel="Submit enquiry" options={interestOptions} />
-      <DetailDialog onEnquire={enquireAbout} />
     </>
   );
 }

@@ -13,6 +13,7 @@ export const siteEventSchema = z.object({
   image: z.string().optional(),
   /** Uploaded cover (a /media/... path); takes priority over the built-in `image`. */
   imageUrl: z.string().nullable().optional(),
+  isFeatured: z.boolean().optional(),
   // Unknown categories (e.g. added to the API later) show under "Summit" rather than breaking the page.
   category: z.enum(EVENT_CATEGORIES).catch('summit').default('summit'),
   startDate: z.string().nullable().optional(),
@@ -21,6 +22,31 @@ export const siteEventSchema = z.object({
 export type SiteEvent = z.infer<typeof siteEventSchema>;
 
 export const eventsResponseSchema = z.object({ events: z.array(siteEventSchema).default([]) });
+
+export const eventDetailSchema = siteEventSchema.extend({
+  slug: z.string(),
+  description: z.string(),
+  bookingsOpen: z.boolean(),
+  closedReason: z.string().nullable(),
+  /** Seats still available; null when there's no limit. */
+  seatsLeft: z.number().nullable(),
+  maxAttendees: z.number(),
+});
+export type EventDetail = z.infer<typeof eventDetailSchema>;
+
+export const bookingSchema = z.object({
+  name: z.string().trim().min(1, 'Please enter your full name.').max(120),
+  email: z.email('Please enter a valid email address.').max(200),
+  phone: z.string().trim().max(40),
+  organisation: z.string().trim().max(160),
+  country: z.string().trim().min(1, 'Please enter your country.').max(80),
+  attendees: z.number({ error: 'Enter the number of seats.' }).int().min(1, 'Book at least one seat.'),
+  message: z.string().trim().max(1000),
+  website: z.string(), // honeypot, expected to stay empty
+});
+export type BookingValues = z.infer<typeof bookingSchema>;
+
+export const bookingResultSchema = z.object({ reference: z.string(), attendees: z.number() });
 
 export const enquirySchema = z.object({
   name: z.string().trim().min(1, 'Please enter your full name.').max(120),
@@ -119,8 +145,9 @@ const rankedSchema = z.array(z.object({ label: z.string(), count: z.number() }))
 
 export const statsSchema = z.object({
   days: z.number(),
-  totals: z.object({ enquiries: z.number(), awaitingReply: z.number(), publishedEvents: z.number(), activeStaff: z.number() }),
-  period: z.object({ enquiries: z.number(), previous: z.number() }),
+  totals: z.object({ enquiries: z.number(), awaitingReply: z.number(), publishedEvents: z.number(), activeStaff: z.number(), bookings: z.number() }),
+  period: z.object({ enquiries: z.number(), previous: z.number(), bookings: z.number(), previousBookings: z.number() }),
+  eventPerformance: z.array(z.object({ id: z.string(), title: z.string(), views: z.number(), bookings: z.number(), seatsBooked: z.number() })),
   daily: z.array(z.object({ date: z.string(), count: z.number() })),
   byStatus: z.record(enquiryStatusSchema, z.number()),
   topInterests: rankedSchema,
@@ -176,8 +203,13 @@ export const adminEventSchema = z.object({
   label: z.string(),
   image: z.enum(EVENT_IMAGES),
   imageUrl: z.string().nullable(),
+  description: z.string(),
   isPublished: z.boolean(),
+  bookingsOpen: z.boolean(),
+  isFeatured: z.boolean(),
+  capacity: z.number().nullable(),
   sortOrder: z.number(),
+  stats: z.object({ views: z.number(), bookings: z.number(), seatsBooked: z.number(), seatsLeft: z.number().nullable() }),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -199,13 +231,65 @@ export const eventFormSchema = z
     period: z.string().trim().max(80),
     organiser: z.string().trim().min(1, 'Please enter the organiser.').max(200),
     summary: z.string().trim().min(1, 'Please add a short summary.').max(300),
+    description: z.string().trim(),
     label: z.string().trim().max(40),
     image: z.enum(EVENT_IMAGES),
     slug: z.string().trim().max(50).regex(/^[-a-z0-9]*$/, 'Use lowercase letters, numbers and hyphens only.'),
     sortOrder: z.number({ error: 'Enter a number.' }).int().min(0),
     isPublished: z.boolean(),
+    bookingsOpen: z.boolean(),
+    // Kept as text so it can be blank (no limit); the API receives "" or a whole number.
+    capacity: z.string().trim().regex(/^([1-9]\d*)?$/, 'Enter a whole number of seats, or leave blank for no limit.'),
   })
   .refine(v => !v.endDate || !!v.startDate, { path: ['startDate'], message: 'Add a start date as well as an end date.' })
   .refine(v => !v.endDate || !v.startDate || v.endDate >= v.startDate, { path: ['endDate'], message: 'The end date can’t be before the start date.' })
   .refine(v => !!v.startDate || !!v.period, { path: ['period'], message: 'Add a start date, or describe when it happens (e.g. “December 2026”).' });
 export type EventFormValues = z.infer<typeof eventFormSchema>;
+
+/* ---------- Admin bookings ---------- */
+
+export const BOOKING_STATUSES = ['confirmed', 'cancelled'] as const;
+export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
+export type BookingStatus = z.infer<typeof bookingStatusSchema>;
+
+export const adminBookingSchema = z.object({
+  reference: z.string(),
+  eventId: z.string(),
+  eventTitle: z.string(),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  organisation: z.string(),
+  country: z.string(),
+  attendees: z.number(),
+  message: z.string(),
+  status: bookingStatusSchema,
+  notes: z.string(),
+  createdAt: z.string(),
+});
+export type AdminBooking = z.infer<typeof adminBookingSchema>;
+
+export const adminBookingsResponseSchema = z.object({
+  bookings: z.array(adminBookingSchema),
+  statusCounts: z.record(bookingStatusSchema, z.number()),
+  event: adminEventSchema,
+});
+export type AdminBookingsResponse = z.infer<typeof adminBookingsResponseSchema>;
+
+export const eventPerformanceSchema = z.object({
+  days: z.number(),
+  daily: z.array(z.object({ date: z.string(), views: z.number(), bookings: z.number(), seats: z.number() })),
+  views: z.object({ total: z.number(), lastWeek: z.number() }),
+  bookings: z.object({ confirmed: z.number(), cancelled: z.number(), seats: z.number() }),
+});
+export type EventPerformance = z.infer<typeof eventPerformanceSchema>;
+
+export const allBookingsResponseSchema = z.object({
+  bookings: z.array(adminBookingSchema),
+  count: z.number(),
+  page: z.number(),
+  pages: z.number(),
+  statusCounts: z.record(bookingStatusSchema, z.number()),
+  events: z.array(z.object({ id: z.string(), title: z.string() })),
+});
+export type AllBookingsResponse = z.infer<typeof allBookingsResponseSchema>;

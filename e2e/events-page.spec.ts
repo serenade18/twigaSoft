@@ -3,6 +3,7 @@ import { resetDatabase } from './support';
 
 // e2e_reset seeds: E2E Investment Summit (summit, Nairobi, Mar 2027), E2E Trade Expo (exhibition, Kampala, Jun 2027),
 // E2E Founders Workshop (workshop, Nairobi, May 2025 — past) and an unpublished event.
+// The expo has 3 seats.
 test.beforeEach(() => resetDatabase());
 
 const cards = (page: Page) => page.locator('#event-grid article');
@@ -57,14 +58,13 @@ test('shows an empty state that suggests past events', async ({ page }) => {
   await expect(titles(page)).toHaveText(['E2E Founders Workshop']);
 });
 
-test('opens an event and registers interest with it preselected', async ({ page }) => {
+test('opens an event’s page from the list', async ({ page }) => {
   await page.goto('/events');
   await page.getByRole('button', { name: 'View E2E Summit' }).click();
-  const dialog = page.getByRole('dialog', { name: 'E2E Investment Summit' });
-  await expect(dialog).toContainText('Nairobi · March 2027');
-  await dialog.getByRole('button', { name: /Enquire about this/ }).click();
-  await expect(dialog).toBeHidden();
-  await expect(page.locator('#enquiry-form')).toContainText('E2E Investment Summit');
+  await expect(page).toHaveURL(/\/events\/e2e-summit$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Investment Summit');
+  await page.getByRole('link', { name: /All summits & events/ }).click();
+  await expect(page).toHaveURL(/\/events$/);
 });
 
 test('the home page features upcoming events and links to the full list', async ({ page }) => {

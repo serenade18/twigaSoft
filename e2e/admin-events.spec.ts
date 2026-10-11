@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { djangoShell, resetDatabase, signIn } from './support';
 
-// A 2×1 PNG, enough for Pillow to accept as an image.
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAEElEQVR4nGNgYGD4z8DAAAAEAQEA5PQ3wQAAAABJRU5ErkJggg==', 'base64');
+// A 16×9 navy PNG (generated with Pillow).
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAF0lEQVR4nGPk1XZlIAUwkaR6VAOtNAAA510Aj+4GdvsAAAAASUVORK5CYII=', 'base64');
 
 test.beforeEach(() => resetDatabase());
 
@@ -39,8 +39,12 @@ test('creates an event with a cover image that appears on the public events page
   await expect(preview).toContainText('Kigali · 10–12 August 2027');
 
   await page.getByRole('button', { name: 'Create event' }).click();
-  await expect(page).toHaveURL(/\/admin\/events$/);
+  // Saving opens the event's overview.
+  await expect(page).toHaveURL(/\/admin\/events\/\d+$/);
   await expect(page.getByText('“Kigali Trade Forum 2027” was created and is live on the site.')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kigali Trade Forum 2027');
+  await expect(page.getByText('Bookings open', { exact: true }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Events', exact: true }).first().click();
   await expect(page.getByRole('row', { name: /Kigali Trade Forum 2027/ })).toContainText('Published');
 
   const stored = djangoShell("from events.models import Event; e = Event.objects.get(title='Kigali Trade Forum 2027'); print(e.slug, e.period, bool(e.cover))");
@@ -79,7 +83,7 @@ test('drafts stay off the site until published, and events can be edited and del
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('“Doha Leaders Summit” was saved and is live on the site.')).toBeVisible();
 
-  await page.getByRole('link', { name: 'Edit Doha Leaders Summit' }).click();
+  await page.getByRole('link', { name: 'Edit event' }).click();
   await page.getByRole('button', { name: 'Delete' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Delete event' }).click();
   await expect(page.getByText('“Doha Leaders Summit” was deleted.')).toBeVisible();
@@ -98,4 +102,26 @@ test('shows the API’s errors next to the fields', async ({ page }) => {
   await page.getByLabel('Web address').fill('e2e-summit'); // already used by a seeded event
   await page.getByRole('button', { name: 'Create event' }).click();
   await expect(page.getByText('Another event already uses this web address.')).toBeVisible();
+});
+
+test('the overview toggles bookings and featuring, and featured events lead the home page', async ({ page }) => {
+  const id = djangoShell("from events.models import Event; print(Event.objects.get(slug='e2e-expo').pk)");
+  await signIn(page);
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.goto(`/admin/events/${id}`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Trade Expo');
+
+  await page.getByRole('switch', { name: 'Featured' }).click();
+  await expect(page.getByRole('switch', { name: 'Featured' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('switch', { name: 'Bookings open' }).click();
+  await expect(page.getByRole('switch', { name: 'Bookings open' })).toHaveAttribute('aria-checked', 'false');
+  expect(djangoShell("from events.models import Event; e = Event.objects.get(slug='e2e-expo'); print(e.is_featured, e.bookings_open)")).toBe('True False');
+
+  await expect(page.getByRole('link', { name: 'Public page' })).toHaveAttribute('href', '/events/e2e-expo');
+
+  // Only the featured event shows on the home page now.
+  await page.goto('/');
+  await expect(page.locator('#event-grid article h3')).toHaveText(['E2E Trade Expo']);
+  await page.goto('/events/e2e-expo');
+  await expect(page.getByText('Bookings are closed for this event.')).toBeVisible();
 });

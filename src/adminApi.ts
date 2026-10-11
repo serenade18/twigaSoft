@@ -1,11 +1,16 @@
-import { ApiError, apiRequest, postJson } from '@/lib/http';
+import { API_BASE_URL, ApiError, apiRequest, postJson } from '@/lib/http';
 import {
+  adminBookingSchema,
+  allBookingsResponseSchema,
+  eventPerformanceSchema,
+  adminBookingsResponseSchema,
   adminEnquiriesResponseSchema,
   adminEnquirySchema,
   adminEventSchema,
   adminEventsResponseSchema,
   adminSchema,
   adminSessionSchema,
+  type BookingStatus,
   type EnquiryStatus,
   type EnquiryUpdateValues,
   type EventFormValues,
@@ -141,11 +146,62 @@ export async function saveEvent(id: string | null, values: Partial<EventFormValu
   return z.object({ event: adminEventSchema }).parse(data).event;
 }
 
-export async function setEventPublished(id: string, isPublished: boolean) {
-  const data = await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ isPublished }) });
+/** Flips an event's switches (published, bookings open, featured) without touching anything else. */
+export async function updateEventFlags(id: string, flags: { isPublished?: boolean; bookingsOpen?: boolean; isFeatured?: boolean }) {
+  const data = await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(flags) });
   return z.object({ event: adminEventSchema }).parse(data).event;
+}
+
+export async function fetchEventPerformance(id: string, days: number) {
+  return eventPerformanceSchema.parse(await adminRequest(`/api/admin/events/${encodeURIComponent(id)}/performance?days=${days}`));
+}
+
+export interface BookingQuery {
+  event?: string;
+  status?: BookingStatus;
+  search?: string;
+  page?: number;
+}
+
+/** Bookings across all events, newest first, 25 per page. */
+export async function fetchAllBookings({ event, status, search, page }: BookingQuery = {}) {
+  const params = new URLSearchParams();
+  if (event) params.set('event', event);
+  if (status) params.set('status', status);
+  if (search) params.set('search', search);
+  if (page && page > 1) params.set('page', String(page));
+  const query = params.toString() ? `?${params}` : '';
+  return allBookingsResponseSchema.parse(await adminRequest(`/api/admin/bookings${query}`));
 }
 
 export async function deleteEvent(id: string) {
   await adminRequest(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/* Bookings. */
+
+export async function fetchEventBookings(eventId: string, { status, search }: { status?: BookingStatus; search?: string } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (search) params.set('search', search);
+  const query = params.toString() ? `?${params}` : '';
+  return adminBookingsResponseSchema.parse(await adminRequest(`/api/admin/events/${encodeURIComponent(eventId)}/bookings${query}`));
+}
+
+export async function updateBooking(reference: string, values: { status?: BookingStatus; notes?: string }) {
+  const data = await adminRequest(`/api/admin/bookings/${encodeURIComponent(reference)}`, { method: 'PATCH', body: JSON.stringify(values) });
+  return z.object({ booking: adminBookingSchema }).parse(data).booking;
+}
+
+/** Downloads an event's bookings as CSV (fetched with the admin's token, then saved by the browser). */
+export async function downloadBookingsCsv(eventId: string, filename: string) {
+  const token = useAuthStore.getState().token;
+  const response = await fetch(`${API_BASE_URL}/api/admin/events/${encodeURIComponent(eventId)}/bookings?export=csv`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new ApiError('Could not download the bookings. Please try again.', response.status);
+  const url = URL.createObjectURL(await response.blob());
+  const link = Object.assign(document.createElement('a'), { href: url, download: filename });
+  link.click();
+  URL.revokeObjectURL(url);
 }

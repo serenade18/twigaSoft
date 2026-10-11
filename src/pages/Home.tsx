@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DetailDialog from '@/components/DetailDialog';
 import EnquiryForm from '@/components/EnquiryForm';
 import EventsSection from '@/components/EventsSection';
@@ -25,7 +26,9 @@ export default function Home() {
   const closeDetail = useSiteStore(s => s.closeDetail);
 
   const openService = (title: string) => openDetail({ title, ...serviceDetails[title] });
-  const openEvent = (event: SiteEvent) => openDetail(eventDetail(event));
+  const navigate = useNavigate();
+  // Events have their own page (details + booking); the pop-up is only a fallback for events without one.
+  const openEvent = (event: SiteEvent) => (event.slug ? navigate(`/events/${event.slug}`) : openDetail(eventDetail(event)));
 
   function enquireAbout(title: string) {
     closeDetail();
