@@ -9,8 +9,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': path.resolve(__dirname, './src') } },
     server: {
-      // Forward /api calls to the backend during development.
-      proxy: { '/api': env.API_PROXY_TARGET || 'http://localhost:8000' },
+      // In development the app calls /api on its own origin and Vite forwards it to the backend (no CORS needed).
+      proxy: { '/api': env.API_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:8000' },
     },
   };
 });

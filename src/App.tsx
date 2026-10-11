@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
 import RequireAdmin from '@/components/admin/RequireAdmin';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import About from '@/pages/About';
+import ComingSoon from '@/pages/admin/ComingSoon';
 import Dashboard from '@/pages/admin/Dashboard';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import Login from '@/pages/auth/Login';
@@ -47,7 +49,11 @@ export default function App() {
           <Route path="/about-twb-global.html" element={<Navigate to="/about-twb-global" replace />} />
         </Route>
         <Route path="/admin">
-          <Route index element={<RequireAdmin><Dashboard /></RequireAdmin>} />
+          <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+            <Route index element={<Dashboard />} />
+            <Route path="events" element={<ComingSoon title="Events" />} />
+            <Route path="enquiries" element={<ComingSoon title="Enquiries" />} />
+          </Route>
           <Route path="login" element={<Login />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
