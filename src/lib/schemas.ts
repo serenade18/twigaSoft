@@ -62,3 +62,38 @@ export const resetPasswordSchema = z
   })
   .refine(values => values.password === values.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
 export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+
+/* ---------- Admin enquiries ---------- */
+
+export const ENQUIRY_STATUSES = ['new', 'in_progress', 'closed'] as const;
+export const enquiryStatusSchema = z.enum(ENQUIRY_STATUSES);
+export type EnquiryStatus = z.infer<typeof enquiryStatusSchema>;
+
+export const adminEnquirySchema = z.object({
+  reference: z.string(),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  country: z.string(),
+  interest: z.string(),
+  message: z.string(),
+  status: enquiryStatusSchema,
+  notes: z.string(),
+  createdAt: z.string(),
+});
+export type AdminEnquiry = z.infer<typeof adminEnquirySchema>;
+
+export const adminEnquiriesResponseSchema = z.object({
+  enquiries: z.array(adminEnquirySchema),
+  count: z.number(),
+  page: z.number(),
+  pages: z.number(),
+  statusCounts: z.record(enquiryStatusSchema, z.number()),
+});
+export type AdminEnquiriesResponse = z.infer<typeof adminEnquiriesResponseSchema>;
+
+export const enquiryUpdateSchema = z.object({
+  status: enquiryStatusSchema,
+  notes: z.string(),
+});
+export type EnquiryUpdateValues = z.infer<typeof enquiryUpdateSchema>;

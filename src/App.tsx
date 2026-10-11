@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import About from '@/pages/About';
 import ComingSoon from '@/pages/admin/ComingSoon';
 import Dashboard from '@/pages/admin/Dashboard';
+import Enquiries from '@/pages/admin/Enquiries';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import Login from '@/pages/auth/Login';
 import ResetPassword from '@/pages/auth/ResetPassword';
@@ -52,7 +53,7 @@ export default function App() {
           <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
             <Route index element={<Dashboard />} />
             <Route path="events" element={<ComingSoon title="Events" />} />
-            <Route path="enquiries" element={<ComingSoon title="Enquiries" />} />
+            <Route path="enquiries" element={<Enquiries />} />
           </Route>
           <Route path="login" element={<Login />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
