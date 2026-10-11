@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Download, Search } from 'lucide-react';
 import { downloadBookingsCsv, fetchEventBookings } from '@/adminApi';
-import BookingsTable from '@/components/admin/BookingsTable';
+import BookingList from '@/components/admin/BookingList';
 import FormAlert from '@/components/admin/FormAlert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { AdminBookingsResponse, BookingStatus } from '@/lib/schemas';
+import { BOOKING_STATUS_LABELS, BOOKING_STATUSES, type AdminBookingsResponse, type BookingStatus } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
 import { useEventContext } from '@/pages/admin/EventOverview';
 
 const STATUS_TABS: { value?: BookingStatus; label: string }[] = [
   { value: undefined, label: 'All' },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'cancelled', label: 'Cancelled' },
+  ...BOOKING_STATUSES.map(value => ({ value, label: BOOKING_STATUS_LABELS[value] })),
 ];
 
-/** Attendees tab: the event's bookings, with cancel/restore, notes and CSV export. */
+/** Attendees tab: the event's bookings, with approve/decline, notes and CSV export. */
 export default function EventAttendees() {
   const { event, refresh } = useEventContext();
   const [status, setStatus] = useState<BookingStatus | undefined>();
@@ -56,7 +55,7 @@ export default function EventAttendees() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="Filter by status" className="flex flex-wrap gap-2">
           {STATUS_TABS.map(tab => {
-            const count = !data ? undefined : tab.value ? data.statusCounts[tab.value] : data.statusCounts.confirmed + data.statusCounts.cancelled;
+            const count = !data ? undefined : tab.value ? data.statusCounts[tab.value] : data.statusCounts.pending + data.statusCounts.confirmed + data.statusCounts.cancelled;
             return (
               <Button key={tab.label} role="tab" aria-selected={status === tab.value} size="sm" variant={status === tab.value ? 'default' : 'outline'}
                 className={cn(status !== tab.value && 'bg-white')} onClick={() => setStatus(tab.value)}>
@@ -76,7 +75,7 @@ export default function EventAttendees() {
 
       {error && <div className="mb-4"><FormAlert tone="error">{error}</FormAlert></div>}
 
-      <BookingsTable bookings={data?.bookings} loading={loading} onError={setError}
+      <BookingList bookings={data?.bookings} loading={loading} onError={setError}
         empty={search || status ? 'No bookings match these filters.' : 'No bookings yet.'}
         onChanged={() => { setReload(n => n + 1); refresh(); }} />
     </div>

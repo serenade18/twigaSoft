@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+    // Production build goes into the API project, which serves it (twigaSoftApi/frontend/dist).
+    build: { outDir: path.resolve(__dirname, '../twigaSoftApi/frontend/dist'), emptyOutDir: true },
     server: {
       // In development the app calls /api on its own origin and Vite forwards it to the backend (no CORS needed).
       // Uploaded files (/media) come from the backend too.

@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { CheckCircle2, Eye, Mail, PlayCircle, RotateCcw, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchEnquiries } from '@/adminApi';
+import { fetchEnquiries, updateEnquiry } from '@/adminApi';
 import EnquiryDetailSheet, { formatReceived } from '@/components/admin/EnquiryDetailSheet';
 import EnquiryStatusBadge, { STATUS_LABELS } from '@/components/admin/EnquiryStatusBadge';
 import FormAlert from '@/components/admin/FormAlert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import usePageMeta from '@/hooks/usePageMeta';
-import { ENQUIRY_STATUSES, enquiryStatusSchema, type AdminEnquiry, type AdminEnquiriesResponse } from '@/lib/schemas';
+import { ENQUIRY_STATUSES, enquiryStatusSchema, type AdminEnquiry, type AdminEnquiriesResponse, type EnquiryStatus } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join('');
+
+// The quick action on each card moves an enquiry along: new → in progress → closed (→ reopened).
+const NEXT_STATUS = {
+  new: { status: 'in_progress', label: 'Start', Icon: PlayCircle },
+  in_progress: { status: 'closed', label: 'Close', Icon: CheckCircle2 },
+  closed: { status: 'new', label: 'Reopen', Icon: RotateCcw },
+} as const satisfies Record<EnquiryStatus, { status: EnquiryStatus; label: string; Icon: unknown }>;
 
 /** Admin inbox of enquiries from the site's forms. Filters, search and page live in the URL. */
 export default function Enquiries() {
@@ -25,6 +34,20 @@ export default function Enquiries() {
   const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState<AdminEnquiry | null>(null);
   const [searchInput, setSearchInput] = useState(search);
+  const [changing, setChanging] = useState<string | null>(null);
+
+  async function changeStatus(enquiry: AdminEnquiry, next: EnquiryStatus) {
+    setChanging(enquiry.reference);
+    setError('');
+    try {
+      await updateEnquiry(enquiry.reference, { status: next });
+      setReload(n => n + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update the enquiry.');
+    } finally {
+      setChanging(null);
+    }
+  }
 
   function updateParams(changes: Record<string, string | undefined>) {
     setParams(current => {
@@ -92,40 +115,50 @@ export default function Enquiries() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-white" aria-busy={loading}>
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="border-b border-border bg-[#f8fafc] text-xs tracking-wide text-muted-foreground uppercase">
-            <tr>
-              <th scope="col" className="px-4 py-3 font-semibold">Received</th>
-              <th scope="col" className="px-4 py-3 font-semibold">From</th>
-              <th scope="col" className="px-4 py-3 font-semibold">Interest</th>
-              <th scope="col" className="hidden px-4 py-3 font-semibold md:table-cell">Country</th>
-              <th scope="col" className="px-4 py-3 font-semibold">Status</th>
-            </tr>
-          </thead>
-          <tbody className={cn(loading && data && 'opacity-60')}>
-            {data?.enquiries.map(enquiry => (
-              <tr key={enquiry.reference} className="cursor-pointer border-b border-border last:border-0 hover:bg-[#f8fafc]" onClick={() => setSelected(enquiry)}>
-                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{formatReceived(enquiry.createdAt)}</td>
-                <td className="px-4 py-3">
-                  {/* The row is clickable for mouse users; this button makes it reachable by keyboard and screen readers. */}
-                  <button type="button" className="border-0 bg-transparent p-0 text-left font-semibold hover:underline" onClick={e => { e.stopPropagation(); setSelected(enquiry); }}>
-                    {enquiry.name}
-                  </button>
-                  <div className="text-muted-foreground">{enquiry.email}</div>
-                </td>
-                <td className="px-4 py-3">{enquiry.interest}</td>
-                <td className="hidden px-4 py-3 md:table-cell">{enquiry.country}</td>
-                <td className="px-4 py-3"><EnquiryStatusBadge status={enquiry.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {loading && !data && <p role="status" className="m-0 px-4 py-10 text-center text-muted-foreground">Loading enquiries…</p>}
-        {data && data.enquiries.length === 0 && (
-          <p className="m-0 px-4 py-10 text-center text-muted-foreground">{search || status ? 'No enquiries match these filters.' : 'No enquiries yet.'}</p>
-        )}
-      </div>
+      {loading && !data && <p role="status" className="py-10 text-center text-muted-foreground">Loading enquiries…</p>}
+      {data && data.enquiries.length === 0 && (
+        <p className="rounded-lg border border-border bg-white px-4 py-10 text-center text-muted-foreground">
+          {search || status ? 'No enquiries match these filters.' : 'No enquiries yet.'}
+        </p>
+      )}
+      <ul className={cn('m-0 grid list-none gap-3 p-0 transition-opacity', loading && data && 'opacity-60')} aria-label="Enquiries" aria-busy={loading}>
+        {data?.enquiries.map(enquiry => {
+          const next = NEXT_STATUS[enquiry.status];
+          return (
+            <li key={enquiry.reference} aria-label={`Enquiry from ${enquiry.name}`} className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-white p-4 pr-5">
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#fcf3e4] text-sm font-bold text-[#8a5a12]" aria-hidden="true">{initials(enquiry.name)}</span>
+              <div className="min-w-0 flex-1">
+                <button type="button" className="mb-0.5 block border-0 bg-transparent p-0 text-left text-base font-semibold hover:underline" onClick={() => setSelected(enquiry)}>
+                  {enquiry.name}
+                </button>
+                <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <span>{enquiry.email}</span>
+                  <span className="font-medium text-foreground">{enquiry.interest}</span>
+                  <span>{enquiry.country}</span>
+                  <span>Received {formatReceived(enquiry.createdAt)}</span>
+                </div>
+                <p className="mb-2 line-clamp-1 text-sm text-muted-foreground">“{enquiry.message}”</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <EnquiryStatusBadge status={enquiry.status} />
+                  <span className="font-mono">{enquiry.reference}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button variant="ghost" size="sm" className="h-8 px-2.5" disabled={changing === enquiry.reference}
+                  onClick={() => changeStatus(enquiry, next.status)} aria-label={`${next.label} enquiry from ${enquiry.name}`}>
+                  <next.Icon /> {next.label}
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2.5" asChild>
+                  <a href={`mailto:${enquiry.email}?subject=${encodeURIComponent(`Re: your enquiry ${enquiry.reference}`)}`} aria-label={`Reply to ${enquiry.name}`}><Mail /> Reply</a>
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => setSelected(enquiry)} aria-label={`View enquiry from ${enquiry.name}`}>
+                  <Eye /> View
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
 
       {data && data.pages > 1 && (
         <nav aria-label="Pagination" className="mt-4 flex items-center justify-between gap-4 text-sm text-muted-foreground">

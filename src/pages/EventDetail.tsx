@@ -133,13 +133,14 @@ function BookingCard({ event, onBooked }: { event: Event; onBooked: () => void }
     return (
       <div className={card} role="status">
         <CheckCircle2 className="mb-3 size-10 text-[#1e6b3a]" aria-hidden="true" />
-        <h2 className="mb-2 text-2xl">You’re booked!</h2>
+        <h2 className="mb-2 text-2xl">Booking request received</h2>
         <p className="mb-4 text-[#465c82]">
-          {confirmation.attendees} seat{confirmation.attendees === 1 ? '' : 's'} for <strong>{event.title}</strong>. We’ve emailed a confirmation to {confirmation.email}.
+          {confirmation.attendees} seat{confirmation.attendees === 1 ? '' : 's'} for <strong>{event.title}</strong> are reserved for you.
+          Once our team approves your booking, we’ll email your tickets to {confirmation.email}.
         </p>
         <p className="mb-1 text-sm text-[#677687]">Your booking reference</p>
         <p className="mb-4 font-mono text-xl font-bold tracking-wide text-[#0a1956]">{confirmation.reference}</p>
-        <p className="mb-5 text-sm text-[#677687]">There’s nothing to pay now. We’ll be in touch with participation details before the event.</p>
+        <p className="mb-5 text-sm text-[#677687]">There’s nothing to pay. Each ticket has a QR code that’s scanned at the entrance on the day.</p>
         <Link to="/events" className="button button-dark mt-0!">Browse more events</Link>
       </div>
     );

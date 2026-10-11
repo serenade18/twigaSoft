@@ -1,9 +1,10 @@
-import { apiRequest, postJson } from '@/lib/http';
+import { API_BASE_URL, apiRequest, postJson } from '@/lib/http';
 import {
   bookingResultSchema,
   enquiryResultSchema,
   eventDetailSchema,
   eventsResponseSchema,
+  ticketsPageSchema,
   type BookingValues,
   type Enquiry,
   type SiteEvent,
@@ -47,3 +48,10 @@ export function recordEventView(slug: string) {
 export async function bookEvent(slug: string, payload: BookingValues) {
   return bookingResultSchema.parse(await postJson(`/api/events/${encodeURIComponent(slug)}/bookings`, payload));
 }
+
+export async function fetchTickets(token: string) {
+  return ticketsPageSchema.parse(await apiRequest(`/api/tickets/${encodeURIComponent(token)}`));
+}
+
+/** Direct link to the tickets PDF (the token is the credential, so a plain link works). */
+export const ticketsPdfUrl = (token: string) => `${API_BASE_URL}/api/tickets/${encodeURIComponent(token)}/pdf`;

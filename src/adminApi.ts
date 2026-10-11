@@ -2,6 +2,7 @@ import { API_BASE_URL, ApiError, apiRequest, postJson } from '@/lib/http';
 import {
   adminBookingSchema,
   allBookingsResponseSchema,
+  checkInTicketSchema,
   eventPerformanceSchema,
   adminBookingsResponseSchema,
   adminEnquiriesResponseSchema,
@@ -204,4 +205,35 @@ export async function downloadBookingsCsv(eventId: string, filename: string) {
   const link = Object.assign(document.createElement('a'), { href: url, download: filename });
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export async function resendTickets(reference: string) {
+  await adminRequest(`/api/admin/bookings/${encodeURIComponent(reference)}/resend-tickets`, { method: 'POST' });
+}
+
+export type CheckInResult =
+  | { ok: true; ticket: z.infer<typeof checkInTicketSchema> }
+  | { ok: false; result: string; message: string; ticket?: z.infer<typeof checkInTicketSchema> };
+
+/** Checks a scanned ticket in. Refusals (wrong day, already used…) come back as results, not exceptions. */
+export async function checkInTicket(code: string): Promise<CheckInResult> {
+  const token = useAuthStore.getState().token;
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/admin/check-in`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    });
+  } catch {
+    return { ok: false, result: 'network', message: 'Can’t reach the server. Check the connection and scan again.' };
+  }
+  if (response.status === 401) useAuthStore.getState().signOut();
+  const data = z.object({
+    result: z.string().optional(),
+    error: z.string().optional(),
+    ticket: checkInTicketSchema.optional(),
+  }).catch({}).parse(await response.json().catch(() => ({})));
+  if (response.ok && data.ticket) return { ok: true, ticket: data.ticket };
+  return { ok: false, result: data.result ?? 'error', message: data.error ?? 'Something went wrong. Please scan again.', ticket: data.ticket };
 }

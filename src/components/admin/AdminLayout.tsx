@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Inbox, LayoutDashboard, LogOut, Ticket, UsersRound } from 'lucide-react';
+import { CalendarDays, Inbox, LayoutDashboard, LogOut, ScanLine, Ticket, UsersRound } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '@/adminApi';
 import {
@@ -25,6 +25,7 @@ const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/events', label: 'Events', icon: CalendarDays },
   { to: '/admin/bookings', label: 'Bookings', icon: Ticket },
+  { to: '/admin/check-in', label: 'Check-in', icon: ScanLine },
   { to: '/admin/enquiries', label: 'Enquiries', icon: Inbox },
   { to: '/admin/staff', label: 'Staff', icon: UsersRound, adminOnly: true },
 ];

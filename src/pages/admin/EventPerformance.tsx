@@ -43,7 +43,7 @@ export default function EventPerformance() {
   if (!data) return <p role="status" className="py-10 text-center text-muted-foreground">Loading performance…</p>;
 
   const { views, bookings } = data;
-  const conversion = views.total ? (bookings.confirmed / views.total) * 100 : null;
+  const conversion = views.total ? (bookings.active / views.total) * 100 : null;
   const seatShare = event.capacity ? Math.min(100, (bookings.seats / event.capacity) * 100) : null;
   const viewsInRange = data.daily.reduce((sum, d) => sum + d.views, 0);
   const seatsInRange = data.daily.reduce((sum, d) => sum + d.seats, 0);
@@ -54,7 +54,7 @@ export default function EventPerformance() {
         <Tile label="Page views" icon={<Eye className="size-5" />} value={number.format(views.total)}>
           {number.format(views.lastWeek)} in the last 7 days
         </Tile>
-        <Tile label="Seats booked" icon={<Ticket className="size-5" />}
+        <Tile label="Seats reserved" icon={<Ticket className="size-5" />}
           value={event.capacity ? `${number.format(bookings.seats)} / ${number.format(event.capacity)}` : number.format(bookings.seats)}>
           {seatShare === null ? 'No seat limit' : (
             <>
@@ -67,8 +67,8 @@ export default function EventPerformance() {
             </>
           )}
         </Tile>
-        <Tile label="Bookings" icon={<CalendarCheck className="size-5" />} value={number.format(bookings.confirmed)}>
-          {bookings.cancelled ? `${number.format(bookings.cancelled)} cancelled` : 'Confirmed bookings'}
+        <Tile label="Bookings" icon={<CalendarCheck className="size-5" />} value={number.format(bookings.active)}>
+          {bookings.pending ? `${number.format(bookings.pending)} awaiting approval` : bookings.cancelled ? `${number.format(bookings.cancelled)} cancelled` : 'All approved'}
         </Tile>
         <Tile label="Conversion" icon={<Percent className="size-5" />} value={conversion === null ? '—' : `${conversion.toFixed(conversion < 10 ? 1 : 0)}%`}>
           of page views became a booking

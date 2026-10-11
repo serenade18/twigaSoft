@@ -2,15 +2,13 @@ import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchAllBookings } from '@/adminApi';
-import BookingsTable from '@/components/admin/BookingsTable';
+import BookingList from '@/components/admin/BookingList';
 import FormAlert from '@/components/admin/FormAlert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import usePageMeta from '@/hooks/usePageMeta';
-import { BOOKING_STATUSES, type AllBookingsResponse } from '@/lib/schemas';
+import { BOOKING_STATUS_LABELS, BOOKING_STATUSES, type AllBookingsResponse } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
-
-const STATUS_LABELS = { confirmed: 'Confirmed', cancelled: 'Cancelled' } as const;
 
 /** Every booking across events. Filters, search and page live in the URL. */
 export default function Bookings() {
@@ -56,15 +54,15 @@ export default function Bookings() {
 
   const counts = data?.statusCounts;
   const tabs = [
-    { value: undefined, label: 'All', count: counts && counts.confirmed + counts.cancelled },
-    ...BOOKING_STATUSES.map(value => ({ value, label: STATUS_LABELS[value], count: counts?.[value] })),
+    { value: undefined, label: 'All', count: counts && counts.pending + counts.confirmed + counts.cancelled },
+    ...BOOKING_STATUSES.map(value => ({ value, label: BOOKING_STATUS_LABELS[value], count: counts?.[value] })),
   ];
 
   return (
     <section className="mx-auto max-w-6xl">
       <div className="mb-6">
         <h1 className="mb-1 text-3xl">Bookings</h1>
-        <p className="mb-0 text-muted-foreground">Seats booked for events on the site. No payment is taken.</p>
+        <p className="mb-0 text-muted-foreground">Approve bookings to email the tickets. No payment is taken.</p>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -91,7 +89,7 @@ export default function Bookings() {
 
       {error && <div className="mb-4"><FormAlert tone="error">{error}</FormAlert></div>}
 
-      <BookingsTable bookings={data?.bookings} loading={loading} showEvent onError={setError} onChanged={() => setReload(n => n + 1)}
+      <BookingList bookings={data?.bookings} loading={loading} showEvent onError={setError} onChanged={() => setReload(n => n + 1)}
         empty={search || status || event ? 'No bookings match these filters.' : 'No bookings yet.'} />
 
       {data && data.pages > 1 && (

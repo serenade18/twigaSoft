@@ -9,6 +9,7 @@ import AdminEvents from '@/pages/admin/AdminEvents';
 import Dashboard from '@/pages/admin/Dashboard';
 import Enquiries from '@/pages/admin/Enquiries';
 import Bookings from '@/pages/admin/Bookings';
+import CheckIn from '@/pages/admin/CheckIn';
 import EventAttendees from '@/pages/admin/EventAttendees';
 import EventEditor from '@/pages/admin/EventEditor';
 import EventOverview from '@/pages/admin/EventOverview';
@@ -20,6 +21,7 @@ import ResetPassword from '@/pages/auth/ResetPassword';
 import EventDetail from '@/pages/EventDetail';
 import Events from '@/pages/Events';
 import Home from '@/pages/Home';
+import Tickets from '@/pages/Tickets';
 
 // Scrolls to the #hash target after navigation, or to the top for a new page.
 function ScrollToHash() {
@@ -56,6 +58,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:slug" element={<EventDetail />} />
+          <Route path="/tickets/:token" element={<Tickets />} />
           <Route path="/about-twb-global" element={<About />} />
           <Route path="/about-twb-global.html" element={<Navigate to="/about-twb-global" replace />} />
         </Route>
@@ -70,6 +73,7 @@ export default function App() {
             </Route>
             <Route path="events/:id/edit" element={<EventEditor />} />
             <Route path="bookings" element={<Bookings />} />
+            <Route path="check-in" element={<CheckIn />} />
             <Route path="enquiries" element={<Enquiries />} />
             <Route path="staff" element={<Staff />} />
           </Route>

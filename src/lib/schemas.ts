@@ -46,7 +46,19 @@ export const bookingSchema = z.object({
 });
 export type BookingValues = z.infer<typeof bookingSchema>;
 
-export const bookingResultSchema = z.object({ reference: z.string(), attendees: z.number() });
+export const bookingResultSchema = z.object({ reference: z.string(), attendees: z.number(), status: z.string().optional() });
+
+/* ---------- Tickets (public page reached from the approval email) ---------- */
+
+export const ticketsPageSchema = z.object({
+  reference: z.string(),
+  name: z.string(),
+  status: z.enum(['pending', 'confirmed', 'cancelled']),
+  attendees: z.number(),
+  event: z.object({ title: z.string(), slug: z.string(), period: z.string(), location: z.string(), organiser: z.string(), imageUrl: z.string().nullable() }),
+  tickets: z.array(z.object({ number: z.number(), qr: z.string(), checkedInAt: z.string().nullable() })),
+});
+export type TicketsPage = z.infer<typeof ticketsPageSchema>;
 
 export const enquirySchema = z.object({
   name: z.string().trim().min(1, 'Please enter your full name.').max(120),
@@ -145,7 +157,9 @@ const rankedSchema = z.array(z.object({ label: z.string(), count: z.number() }))
 
 export const statsSchema = z.object({
   days: z.number(),
-  totals: z.object({ enquiries: z.number(), awaitingReply: z.number(), publishedEvents: z.number(), activeStaff: z.number(), bookings: z.number() }),
+  totals: z.object({
+    enquiries: z.number(), awaitingReply: z.number(), publishedEvents: z.number(), activeStaff: z.number(), bookings: z.number(), pendingBookings: z.number(),
+  }),
   period: z.object({ enquiries: z.number(), previous: z.number(), bookings: z.number(), previousBookings: z.number() }),
   eventPerformance: z.array(z.object({ id: z.string(), title: z.string(), views: z.number(), bookings: z.number(), seatsBooked: z.number() })),
   daily: z.array(z.object({ date: z.string(), count: z.number() })),
@@ -209,7 +223,7 @@ export const adminEventSchema = z.object({
   isFeatured: z.boolean(),
   capacity: z.number().nullable(),
   sortOrder: z.number(),
-  stats: z.object({ views: z.number(), bookings: z.number(), seatsBooked: z.number(), seatsLeft: z.number().nullable() }),
+  stats: z.object({ views: z.number(), bookings: z.number(), pending: z.number(), seatsBooked: z.number(), seatsLeft: z.number().nullable() }),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -248,7 +262,8 @@ export type EventFormValues = z.infer<typeof eventFormSchema>;
 
 /* ---------- Admin bookings ---------- */
 
-export const BOOKING_STATUSES = ['confirmed', 'cancelled'] as const;
+export const BOOKING_STATUSES = ['pending', 'confirmed', 'cancelled'] as const;
+export const BOOKING_STATUS_LABELS = { pending: 'Pending', confirmed: 'Approved', cancelled: 'Cancelled' } as const;
 export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
 export type BookingStatus = z.infer<typeof bookingStatusSchema>;
 
@@ -266,6 +281,15 @@ export const adminBookingSchema = z.object({
   status: bookingStatusSchema,
   notes: z.string(),
   createdAt: z.string(),
+  approvedAt: z.string().nullable(),
+  /** The booker's tickets page, once approved. */
+  ticketsUrl: z.string().nullable(),
+  /** API path of the tickets PDF, once approved. */
+  ticketsPdf: z.string().nullable(),
+  checkedIn: z.number(),
+  tickets: z.array(z.object({
+    number: z.number(), code: z.string(), qr: z.string(), checkedInAt: z.string().nullable(), checkedInBy: z.string().nullable(),
+  })),
 });
 export type AdminBooking = z.infer<typeof adminBookingSchema>;
 
@@ -280,7 +304,7 @@ export const eventPerformanceSchema = z.object({
   days: z.number(),
   daily: z.array(z.object({ date: z.string(), views: z.number(), bookings: z.number(), seats: z.number() })),
   views: z.object({ total: z.number(), lastWeek: z.number() }),
-  bookings: z.object({ confirmed: z.number(), cancelled: z.number(), seats: z.number() }),
+  bookings: z.object({ active: z.number(), pending: z.number(), cancelled: z.number(), seats: z.number() }),
 });
 export type EventPerformance = z.infer<typeof eventPerformanceSchema>;
 
@@ -293,3 +317,17 @@ export const allBookingsResponseSchema = z.object({
   events: z.array(z.object({ id: z.string(), title: z.string() })),
 });
 export type AllBookingsResponse = z.infer<typeof allBookingsResponseSchema>;
+
+/* ---------- Check-in ---------- */
+
+export const checkInTicketSchema = z.object({
+  number: z.number(),
+  of: z.number(),
+  name: z.string(),
+  reference: z.string(),
+  event: z.string(),
+  checkedInAt: z.string().nullable(),
+  eventCheckedIn: z.number(),
+  eventTickets: z.number(),
+});
+export type CheckInTicket = z.infer<typeof checkInTicketSchema>;

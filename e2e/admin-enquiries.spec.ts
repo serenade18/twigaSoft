@@ -12,7 +12,7 @@ Enquiry.objects.create(name='Zara Ali', email='zara@example.com', reference='AGX
 print('ok')`);
 });
 
-const rows = (page: Page) => page.locator('tbody tr');
+const rows = (page: Page) => page.getByRole('list', { name: 'Enquiries' }).getByRole('listitem');
 const storedEnquiry = (reference: string) =>
   JSON.parse(djangoShell(`import json; from enquiries.models import Enquiry; e = Enquiry.objects.get(reference='${reference}'); print(json.dumps({'status': e.status, 'notes': e.notes}))`));
 
@@ -40,7 +40,7 @@ test('opens an enquiry and saves its status and notes', async ({ page }) => {
   await signIn(page);
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto('/admin/enquiries');
-  await page.getByRole('button', { name: 'Amina Yusuf' }).click();
+  await page.getByRole('button', { name: 'Amina Yusuf', exact: true }).click();
 
   const panel = page.getByRole('dialog');
   await expect(panel.getByRole('heading', { name: 'Amina Yusuf' })).toBeVisible();
@@ -57,4 +57,8 @@ test('opens an enquiry and saves its status and notes', async ({ page }) => {
   await expect(panel).toBeHidden();
   await expect(page.getByRole('tab', { name: 'In progress 1' })).toBeVisible();
   await expect(rows(page).filter({ hasText: 'Amina Yusuf' })).toContainText('In progress');
+
+  // The card's quick action moves it on to closed.
+  await page.getByRole('button', { name: 'Close enquiry from Amina Yusuf' }).click();
+  await expect(rows(page).filter({ hasText: 'Amina Yusuf' })).toContainText('Closed');
 });

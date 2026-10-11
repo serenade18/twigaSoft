@@ -75,7 +75,7 @@
   /* Browsers default textareas to a monospace font; the site's own form styles (unlayered) still win. */
   textarea { font: inherit; }
   /* shadcn buttons: drop the browser's grey box so ghost buttons are plain; variants add their own border/background. */
-  [data-slot="button"] { border: 0 solid; background-color: transparent; }
+  [data-slot="button"], [data-slot="sheet-close"], [data-slot="dialog-close"] { border: 0 solid; background-color: transparent; }
   [data-slot="sidebar"] ul { list-style: none; margin: 0; padding: 0; }
   [data-slot="sidebar"] button { border: 0; background: transparent; color: inherit; }
 }
